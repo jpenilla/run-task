@@ -123,6 +123,8 @@ public open class RunServerTask : DefaultTask() {
   /**
    * Sets the build of Paper to use. By default, [PaperBuild.LATEST] is
    * used, which uses the latest build for the configured Minecraft version.
+   *
+   * @param paperBuild paper build
    */
   public fun paperBuild(paperBuild: PaperBuild) {
     this.paperBuild.set(paperBuild)
