@@ -1,0 +1,35 @@
+metadata:
+  format: { version: 1.0 }
+  polyglot-extensions:
+    - plugins
+
+plugins:
+  net.kyori.indra: &indra 2.0.4
+  net.kyori.indra.license-header: *indra
+  net.kyori.indra.publishing.gradle-plugin: *indra
+  com.gradle.plugin-publish: 0.14.0
+
+versions:
+  shadow: 7.0.0
+  jackson: 2.12.2
+  gradleDownloadTask: 4.1.1
+
+dependencies:
+  shadow:
+    group: gradle.plugin.com.github.jengelman.gradle.plugins
+    name: shadow
+    version: { ref: shadow }
+
+  jacksonModuleKotlin:
+    group: com.fasterxml.jackson.module
+    name: jackson-module-kotlin
+    version: { ref: jackson }
+
+  gradleDownloadTask:
+    group: de.undercouch
+    name: gradle-download-task
+    version: { ref: gradleDownloadTask }
+
+bundles:
+  jackson:
+    - jacksonModuleKotlin
