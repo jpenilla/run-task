@@ -31,9 +31,13 @@ public class RunPaper : Plugin<Project> {
       runServer.get().apply {
         this.group = "RunPaper"
         this.description = "Run a Paper server for plugin testing."
+
+        // Try to find plugin jar & task dependency automatically
         val taskDependency = resolveTaskDependency()
-        if (taskDependency != null) {
+        val pluginJar = resolvePluginJar()
+        if (taskDependency != null && pluginJar != null) {
           this.dependsOn(taskDependency)
+          this.pluginJars.from(pluginJar)
         }
       }
     }

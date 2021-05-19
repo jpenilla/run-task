@@ -18,22 +18,20 @@ package xyz.jpenilla.runpaper.task
 
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import de.undercouch.gradle.tasks.download.DownloadAction
-import de.undercouch.gradle.tasks.download.DownloadExtension
-import de.undercouch.gradle.tasks.download.VerifyAction
-import de.undercouch.gradle.tasks.download.VerifyExtension
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import org.gradle.kotlin.dsl.delegateClosureOf
 import org.gradle.kotlin.dsl.getByName
-import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.hasPlugin
 import org.gradle.kotlin.dsl.property
 import org.gradle.process.JavaExecSpec
+import xyz.jpenilla.runpaper.extension.download
+import xyz.jpenilla.runpaper.extension.verify
 import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
 import xyz.jpenilla.runpaper.paperapi.Projects
 import java.io.File
@@ -47,9 +45,19 @@ public open class RunServerTask : DefaultTask() {
   private val minecraftVersion: Property<String> = this.project.objects.property()
   private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.LATEST)
   private val runDirectory: DirectoryProperty = this.project.objects.directoryProperty().convention(this.project.layout.projectDirectory.dir("run"))
-  private val pluginJar: RegularFileProperty = this.project.objects.fileProperty().convention { this.resolvePluginJar() }
-  private val pluginJarName: Property<String> = this.project.objects.property<String>().convention(this.project.name + ".jar")
   private val paperclipJar: RegularFileProperty = this.project.objects.fileProperty().convention(this.runDirectory.file("paperclip.jar"))
+
+  /**
+   * The collection of plugin jars to load. Run Paper will attempt to locate
+   * a plugin jar from the shadowJar task output if present, or else the standard
+   * jar archive. In non-standard setups, it may be necessary to manually add
+   * your plugin's jar to this collection, as well as specify task dependencies.
+   *
+   * Adding files to this collection may also be useful for projects which produce
+   * more than one plugin jar, or to load dependency plugins.
+   */
+  @InputFiles
+  public val pluginJars: ConfigurableFileCollection = this.project.objects.fileCollection()
 
   @TaskAction
   private fun runServer() {
@@ -58,11 +66,17 @@ public open class RunServerTask : DefaultTask() {
   }
 
   private fun configureJavaExec(javaExec: JavaExecSpec) {
-    javaExec.workingDir(this.runDirectory)
     javaExec.standardInput = System.`in`
-    javaExec.args = listOf("nogui")
-    javaExec.systemProperty("disable.watchdog", true)
+    javaExec.workingDir(this.runDirectory)
     javaExec.classpath(this.paperclipJar)
+
+    // Set disable watchdog property for debugging
+    javaExec.systemProperty("disable.watchdog", true)
+
+    // Add our arguments
+    val arguments = mutableListOf("nogui")
+    arguments.addAll(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
+    javaExec.args = arguments
   }
 
   private fun beforeRun() {
@@ -71,14 +85,6 @@ public open class RunServerTask : DefaultTask() {
     if (!workingDir.exists()) {
       workingDir.mkdirs()
     }
-
-    // Create plugins dir if needed and copy plugin jar
-    val pluginsDir = workingDir.resolve("plugins")
-    if (!pluginsDir.exists()) {
-      pluginsDir.mkdir()
-    }
-    val plugin = pluginsDir.resolve(this.pluginJarName.get())
-    this.pluginJar.get().asFile.copyTo(plugin, overwrite = true)
 
     this.downloadPaper()
   }
@@ -90,6 +96,7 @@ public open class RunServerTask : DefaultTask() {
     }
     val downloadsApi = DownloadsAPI()
 
+    // Find our build
     val buildNumber = if (this.paperBuild.get() == PaperBuild.LATEST) {
       downloadsApi.version(Projects.PAPER, this.minecraftVersion.get()).builds.last()
     } else {
@@ -97,12 +104,15 @@ public open class RunServerTask : DefaultTask() {
     }
     val download = downloadsApi.build(Projects.PAPER, this.minecraftVersion.get(), buildNumber).downloads.entries.first().value
 
+    // Download
     this.logger.lifecycle("Downloading Paper {} build {}...", this.minecraftVersion.get(), buildNumber)
     this.download {
       this.src(downloadsApi.downloadURL(Projects.PAPER, this@RunServerTask.minecraftVersion.get(), buildNumber, download))
       this.dest(this@RunServerTask.paperclipJar.get().asFile)
     }
     this.logger.lifecycle("Done downloading Paper.")
+
+    // Verify
     this.verify {
       this.algorithm("SHA256")
       this.checksum(download.sha256)
@@ -151,37 +161,23 @@ public open class RunServerTask : DefaultTask() {
   }
 
   /**
-   * Configures the filename for the plugin jar in the test server plugins
-   * directory. Should include the `.jar` extension. Defaults to `${project.name}.jar`.
+   * Gets the currently configured run directory
+   * for the test server.
    *
-   * @param pluginJarName new plugin jar name
+   * @return currently configured run directory
    */
-  public fun pluginJarName(pluginJarName: String) {
-    this.pluginJarName.set(pluginJarName)
+  public fun runDirectory(): File {
+    return this.runDirectory.get().asFile
   }
 
   /**
-   * Configures the file to use for the plugin jar. By default will
-   * attempt to use `shadowJar` if present, else the standard `jar`.
-   *
-   * @param pluginJar new plugin jar file
+   * Represents a build of Paper.
    */
-  public fun pluginJar(pluginJar: File) {
-    this.pluginJar.set(pluginJar)
-  }
-
-  /**
-   * Configures the file to use for the plugin jar. By default will
-   * attempt to use `shadowJar` if present, else the standard `jar`.
-   *
-   * @param pluginJar new plugin jar file
-   */
-  public fun pluginJar(pluginJar: RegularFileProperty) {
-    this.pluginJar.set(pluginJar)
-  }
-
   public class PaperBuild internal constructor(internal val buildNumber: Int) {
     public companion object {
+      /**
+       * [PaperBuild] instance pointing to the latest Paper build for the configured Minecraft version.
+       */
       public val LATEST: PaperBuild = PaperBuild(-1)
     }
   }
@@ -193,15 +189,6 @@ public open class RunServerTask : DefaultTask() {
     return this.project.tasks.findByName("jar") as? AbstractArchiveTask
   }
 
-  private fun resolvePluginJar(): File {
-    val task = this.resolveTaskDependency()
-      ?: error("Could not resolve plugin jar automatically, you will need to manually specify it's location, and possibly add task dependencies.")
-    return task.archiveFile.get().asFile
-  }
-
-  private fun download(action: DownloadAction.() -> Unit) =
-    this.project.extensions.getByType<DownloadExtension>().configure(delegateClosureOf(action))
-
-  private fun verify(action: VerifyAction.() -> Unit) =
-    this.project.extensions.getByType<VerifyExtension>().configure(delegateClosureOf(action))
+  internal fun resolvePluginJar(): File? =
+    this.resolveTaskDependency()?.archiveFile?.get()?.asFile
 }
