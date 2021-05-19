@@ -18,18 +18,16 @@ package xyz.jpenilla.runpaper.task
 
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.hasPlugin
 import org.gradle.kotlin.dsl.property
-import org.gradle.process.JavaExecSpec
 import xyz.jpenilla.runpaper.extension.download
 import xyz.jpenilla.runpaper.extension.verify
 import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
@@ -41,7 +39,7 @@ import java.time.Duration
  * Task to download and run a Paper server along with a plugin.
  */
 @Suppress("unused")
-public open class RunServerTask : DefaultTask() {
+public open class RunServerTask : JavaExec() {
   private val minecraftVersion: Property<String> = this.project.objects.property()
   private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.LATEST)
   private val runDirectory: DirectoryProperty = this.project.objects.directoryProperty().convention(this.project.layout.projectDirectory.dir("run"))
@@ -59,27 +57,26 @@ public open class RunServerTask : DefaultTask() {
   @InputFiles
   public val pluginJars: ConfigurableFileCollection = this.project.objects.fileCollection()
 
-  @TaskAction
-  private fun runServer() {
-    this.beforeRun()
-    this.project.javaexec(this::configureJavaExec)
+  override fun exec() {
+    this.configure()
+    this.beforeExec()
+    super.exec()
   }
 
-  private fun configureJavaExec(javaExec: JavaExecSpec) {
-    javaExec.standardInput = System.`in`
-    javaExec.workingDir(this.runDirectory)
-    javaExec.classpath(this.paperclipJar)
+  private fun configure() {
+    this.standardInput = System.`in`
+    this.workingDir(this.runDirectory)
+    this.classpath(this.paperclipJar)
 
     // Set disable watchdog property for debugging
-    javaExec.systemProperty("disable.watchdog", true)
+    this.systemProperty("disable.watchdog", true)
 
     // Add our arguments
-    val arguments = mutableListOf("nogui")
-    arguments.addAll(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
-    javaExec.args = arguments
+    this.args.add("nogui")
+    this.args.addAll(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
   }
 
-  private fun beforeRun() {
+  private fun beforeExec() {
     // Create working dir if needed
     val workingDir = this.runDirectory.get().asFile
     if (!workingDir.exists()) {

@@ -27,6 +27,9 @@ import org.gradle.kotlin.dsl.getByType
 /**
  * Downloads a file based on the supplied configuration block.
  *
+ * See the [Gradle Download Task docs](https://github.com/michel-kraemer/gradle-download-task/)
+ * for more information.
+ *
  * @param configurer configuration block
  */
 public fun Task.download(configurer: DownloadAction.() -> Unit): DownloadExtension =
@@ -35,6 +38,9 @@ public fun Task.download(configurer: DownloadAction.() -> Unit): DownloadExtensi
 /**
  * Verifies a given file by comparing it's hash to a known value.
  * Will throw an exception failing the current task if verification fails.
+ *
+ * See the [Gradle Download Task docs](https://github.com/michel-kraemer/gradle-download-task/)
+ * for more information.
  *
  * @param configurer configuration block
  */
