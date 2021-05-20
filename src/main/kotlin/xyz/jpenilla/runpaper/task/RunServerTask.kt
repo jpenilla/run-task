@@ -74,7 +74,7 @@ public open class RunServerTask : JavaExec() {
     this.systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", true)
 
     // Add our arguments
-    this.args("nogui")
+    this.args("--nogui")
     this.args(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
   }
 
