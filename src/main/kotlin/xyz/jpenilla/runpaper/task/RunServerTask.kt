@@ -72,8 +72,8 @@ public open class RunServerTask : JavaExec() {
     this.systemProperty("disable.watchdog", true)
 
     // Add our arguments
-    this.args.add("nogui")
-    this.args.addAll(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
+    this.args("nogui")
+    this.args(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
   }
 
   private fun beforeExec() {
@@ -185,7 +185,4 @@ public open class RunServerTask : JavaExec() {
     }
     return this.project.tasks.findByName("jar") as? AbstractArchiveTask
   }
-
-  internal fun resolvePluginJar(): File? =
-    this.resolveTaskDependency()?.archiveFile?.get()?.asFile
 }

@@ -28,16 +28,15 @@ public class RunPaper : Plugin<Project> {
     target.extensions.create<RunPaperExtension>("runPaper", target)
     val runServer = target.tasks.register<RunServerTask>("runServer")
     target.afterEvaluate {
-      runServer.get().apply {
+      runServer.forUseAtConfigurationTime().get().apply {
         this.group = "RunPaper"
         this.description = "Run a Paper server for plugin testing."
 
         // Try to find plugin jar & task dependency automatically
         val taskDependency = resolveTaskDependency()
-        val pluginJar = resolvePluginJar()
-        if (taskDependency != null && pluginJar != null) {
+        if (taskDependency != null) {
           this.dependsOn(taskDependency)
-          this.pluginJars.from(pluginJar)
+          this.pluginJars.from(taskDependency.archiveFile)
         }
       }
     }
