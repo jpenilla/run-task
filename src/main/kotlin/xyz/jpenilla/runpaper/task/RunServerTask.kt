@@ -71,6 +71,8 @@ public open class RunServerTask : JavaExec() {
     // Set disable watchdog property for debugging
     this.systemProperty("disable.watchdog", true)
 
+    this.systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", true)
+
     // Add our arguments
     this.args("nogui")
     this.args(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
