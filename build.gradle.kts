@@ -18,7 +18,6 @@ repositories {
 dependencies {
   implementation(libs.bundles.jackson)
   implementation(libs.shadow)
-  implementation(libs.gradleDownloadTask)
 }
 
 kotlin {

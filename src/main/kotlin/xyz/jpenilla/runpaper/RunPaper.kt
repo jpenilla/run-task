@@ -18,27 +18,46 @@ package xyz.jpenilla.runpaper
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.Delete
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.registerIfAbsent
+import xyz.jpenilla.runpaper.service.PaperclipService
 import xyz.jpenilla.runpaper.task.RunServerTask
+import java.io.File
 
 public class RunPaper : Plugin<Project> {
   override fun apply(target: Project) {
-    target.plugins.apply("de.undercouch.download")
-    target.extensions.create<RunPaperExtension>("runPaper", target)
-    val runServer = target.tasks.register<RunServerTask>("runServer")
-    target.afterEvaluate {
-      runServer.forUseAtConfigurationTime().get().apply {
-        this.group = "RunPaper"
-        this.description = "Run a Paper server for plugin testing."
+    target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
 
+    target.gradle.sharedServices.registerIfAbsent(Constants.Services.PAPERCLIP, PaperclipService::class) {
+      this.maxParallelUsages.set(1)
+      this.parameters.getCacheDirectory().set(this@RunPaper.resolveSharedCachesDirectory(target))
+    }
+
+    val runServer = target.tasks.register<RunServerTask>(Constants.Tasks.RUN_SERVER) {
+      this.group = Constants.RUN_PAPER
+      this.description = "Run a Paper server for plugin testing."
+    }
+    target.afterEvaluate {
+      runServer.configure {
         // Try to find plugin jar & task dependency automatically
-        val taskDependency = resolveTaskDependency()
+        val taskDependency = this.resolveTaskDependency()
         if (taskDependency != null) {
           this.dependsOn(taskDependency)
           this.pluginJars.from(taskDependency.archiveFile)
         }
       }
     }
+
+    target.tasks.register<Delete>("cleanPaperclipCache") {
+      this.group = Constants.RUN_PAPER
+      this.description = "Deletes all cached Paperclips."
+      this.delete(this@RunPaper.resolveSharedCachesDirectory(target))
+    }
+  }
+
+  private fun resolveSharedCachesDirectory(project: Project): File {
+    return project.gradle.gradleUserHomeDir.resolve(Constants.GRADLE_CACHES_DIRECTORY_NAME).resolve(Constants.RUN_PAPER).resolve("v1")
   }
 }

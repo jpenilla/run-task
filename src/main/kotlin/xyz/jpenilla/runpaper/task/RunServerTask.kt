@@ -20,30 +20,34 @@ import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
+import org.gradle.api.services.BuildServiceRegistration
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.hasPlugin
+import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.property
-import xyz.jpenilla.runpaper.extension.download
-import xyz.jpenilla.runpaper.extension.verify
-import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
-import xyz.jpenilla.runpaper.paperapi.Projects
+import xyz.jpenilla.runpaper.Constants
+import xyz.jpenilla.runpaper.service.PaperclipService
 import java.io.File
-import java.time.Duration
 
 /**
- * Task to download and run a Paper server along with a plugin.
+ * Task to download and run a Paper server along with plugins.
  */
 @Suppress("unused")
-public open class RunServerTask : JavaExec() {
+public abstract class RunServerTask : JavaExec() {
   private val minecraftVersion: Property<String> = this.project.objects.property()
   private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.LATEST)
   private val runDirectory: DirectoryProperty = this.project.objects.directoryProperty().convention(this.project.layout.projectDirectory.dir("run"))
-  private val paperclipJar: RegularFileProperty = this.project.objects.fileProperty().convention(this.runDirectory.file("paperclip.jar"))
+
+  private val paperclipService: Provider<PaperclipService> = this.project.gradle.sharedServices.registrations
+    .named<BuildServiceRegistration<PaperclipService, PaperclipService.Parameters>>(Constants.Services.PAPERCLIP).map { it.service.get() }
+  private val paperclipJar: RegularFileProperty = this.project.objects.fileProperty()
 
   /**
    * The collection of plugin jars to load. Run Paper will attempt to locate
@@ -60,13 +64,18 @@ public open class RunServerTask : JavaExec() {
   override fun exec() {
     this.configure()
     this.beforeExec()
+    this.logger.lifecycle("Starting Paper...")
+    this.logger.lifecycle("")
     super.exec()
   }
 
   private fun configure() {
     this.standardInput = System.`in`
     this.workingDir(this.runDirectory)
-    this.classpath(this.paperclipJar)
+    val paperclip = this.paperclipJar.orElse {
+      this.paperclipService.get().resolvePaperclip(this.minecraftVersion.get(), this.paperBuild.get())
+    }.get().asFile
+    this.classpath(paperclip)
 
     // Set disable watchdog property for debugging
     this.systemProperty("disable.watchdog", true)
@@ -84,46 +93,12 @@ public open class RunServerTask : JavaExec() {
     if (!workingDir.exists()) {
       workingDir.mkdirs()
     }
-
-    this.downloadPaper()
-  }
-
-  private fun downloadPaper() {
-    // todo: keep a versioned cache
-    if (this.paperBuild.get() == PaperBuild.LATEST && this.paperclipJar.get().asFile.exists() && this.paperclipJar.get().asFile.lastModified() > System.currentTimeMillis() - Duration.ofDays(3).toMillis()) {
-      return
-    }
-    val downloadsApi = DownloadsAPI()
-
-    // Find our build
-    val buildNumber = if (this.paperBuild.get() == PaperBuild.LATEST) {
-      downloadsApi.version(Projects.PAPER, this.minecraftVersion.get()).builds.last()
-    } else {
-      this.paperBuild.get().buildNumber
-    }
-    val download = downloadsApi.build(Projects.PAPER, this.minecraftVersion.get(), buildNumber).downloads.entries.first().value
-
-    // Download
-    this.logger.lifecycle("Downloading Paper {} build {}...", this.minecraftVersion.get(), buildNumber)
-    this.download {
-      this.src(downloadsApi.downloadURL(Projects.PAPER, this@RunServerTask.minecraftVersion.get(), buildNumber, download))
-      this.dest(this@RunServerTask.paperclipJar.get().asFile)
-    }
-    this.logger.lifecycle("Done downloading Paper.")
-
-    // Verify
-    this.verify {
-      this.algorithm("SHA256")
-      this.checksum(download.sha256)
-      this.src(this@RunServerTask.paperclipJar.get().asFile)
-    }
-    this.logger.lifecycle("Verified SHA256 hash of downloaded jar.")
   }
 
   /**
    * Sets the Minecraft version to use.
    *
-   * @param minecraftVersion
+   * @param minecraftVersion minecraft version
    */
   public fun minecraftVersion(minecraftVersion: String) {
     this.minecraftVersion.set(minecraftVersion)
@@ -167,6 +142,30 @@ public open class RunServerTask : JavaExec() {
    */
   public fun runDirectory(): File {
     return this.runDirectory.get().asFile
+  }
+
+  /**
+   * Sets a custom Paperclip to use for this task. By default,
+   * Run Paper will resolve a Paperclip using the Paper downloads
+   * API, however you can use this function to override that
+   * behavior.
+   *
+   * @param file paperclip file
+   */
+  public fun paperclip(file: File) {
+    this.paperclipJar.set(file)
+  }
+
+  /**
+   * Sets a custom Paperclip to use for this task. By default,
+   * Run Paper will resolve a Paperclip using the Paper downloads
+   * API, however you can use this function to override that
+   * behavior.
+   *
+   * @param file paperclip file provider
+   */
+  public fun paperclip(file: Provider<RegularFile>) {
+    this.paperclipJar.set(file)
   }
 
   /**

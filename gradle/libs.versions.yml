@@ -12,7 +12,6 @@ plugins:
 versions:
   shadow: 7.0.0
   jackson: 2.12.2
-  gradleDownloadTask: 4.1.1
 
 dependencies:
   shadow:
@@ -24,11 +23,6 @@ dependencies:
     group: com.fasterxml.jackson.module
     name: jackson-module-kotlin
     version: { ref: jackson }
-
-  gradleDownloadTask:
-    group: de.undercouch
-    name: gradle-download-task
-    version: { ref: gradleDownloadTask }
 
 bundles:
   jackson:
