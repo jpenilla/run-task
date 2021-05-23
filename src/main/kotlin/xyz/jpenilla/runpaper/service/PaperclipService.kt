@@ -25,6 +25,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
@@ -42,6 +43,8 @@ import java.nio.file.StandardCopyOption
 internal abstract class PaperclipService : BuildService<PaperclipService.Parameters>, AutoCloseable {
   interface Parameters : BuildServiceParameters {
     val cacheDirectory: DirectoryProperty
+    val refreshDependencies: Property<Boolean>
+    val offlineMode: Property<Boolean>
   }
 
   companion object {
@@ -68,9 +71,9 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val build = this.resolveBuildNumber(minecraftVersion, paperBuild)
 
     val version = this.versions.versions.computeIfAbsent(minecraftVersion) { Version(it) }
-    val possible = version.knownJars[build]
 
-    if (possible != null) {
+    val possible = version.knownJars[build]
+    if (possible != null && !this.parameters.refreshDependencies.get()) {
       // We already have this Paperclip!
       LOGGER.lifecycle("Located Paper {} build {} in local cache.", minecraftVersion, build)
 
@@ -89,6 +92,9 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     }
 
     // Need to fetch new Paperclip!
+    if (this.parameters.offlineMode.get()) {
+      error("Offline mode is enabled and Run Paper could not locate a locally cached build.")
+    }
     LOGGER.lifecycle("Downloading Paper {} build {}...", minecraftVersion, build)
     val buildResponse = this.api.build(Projects.PAPER, minecraftVersion, build)
     val download = buildResponse.downloads.values.first()
@@ -133,17 +139,28 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     if (paperBuild != RunServerTask.PaperBuild.LATEST) {
       return paperBuild.buildNumber
     }
-    return try {
+    if (this.parameters.offlineMode.get()) {
+      LOGGER.lifecycle("Offline mode enabled, attempting to use latest local build of Paper for Minecraft {}.", minecraftVersion)
+      return this.resolveLatestLocalBuild(minecraftVersion)
+    }
+    return this.resolveLatestRemoteBuild(minecraftVersion)
+  }
+
+  private fun resolveLatestLocalBuild(minecraftVersion: String): Int {
+    val version = this.versions.versions[minecraftVersion] ?: this.unknownMinecraftVersion(minecraftVersion)
+    return version.knownJars.keys.maxOrNull() ?: this.unknownMinecraftVersion(minecraftVersion)
+  }
+
+  private fun resolveLatestRemoteBuild(minecraftVersion: String): Int =
+    try {
       LOGGER.lifecycle("Fetching Paper builds for Minecraft {}...", minecraftVersion)
       this.api.version(Projects.PAPER, minecraftVersion).builds.last().apply {
         LOGGER.lifecycle("Latest build for {} is {}.", minecraftVersion, this)
       }
     } catch (ex: Exception) {
       LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
-      val version = this.versions.versions[minecraftVersion] ?: this.unknownMinecraftVersion(minecraftVersion)
-      version.knownJars.keys.maxOrNull() ?: this.unknownMinecraftVersion(minecraftVersion)
+      this.resolveLatestLocalBuild(minecraftVersion)
     }
-  }
 
   private fun logExpectedActual(expected: String, actual: String) {
     LOGGER.lifecycle(" > Expected: {}", expected)

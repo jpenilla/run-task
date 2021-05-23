@@ -33,6 +33,8 @@ public class RunPaper : Plugin<Project> {
     target.gradle.sharedServices.registerIfAbsent(Constants.Services.PAPERCLIP, PaperclipService::class) {
       this.maxParallelUsages.set(1)
       this.parameters.cacheDirectory.set(this@RunPaper.resolveSharedCachesDirectory(target))
+      this.parameters.refreshDependencies.set(target.gradle.startParameter.isRefreshDependencies)
+      this.parameters.offlineMode.set(target.gradle.startParameter.isOffline)
     }
 
     val runServer = target.tasks.register<RunServerTask>(Constants.Tasks.RUN_SERVER) {
