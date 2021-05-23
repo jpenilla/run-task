@@ -32,7 +32,7 @@ public class RunPaper : Plugin<Project> {
 
     target.gradle.sharedServices.registerIfAbsent(Constants.Services.PAPERCLIP, PaperclipService::class) {
       this.maxParallelUsages.set(1)
-      this.parameters.getCacheDirectory().set(this@RunPaper.resolveSharedCachesDirectory(target))
+      this.parameters.cacheDirectory.set(this@RunPaper.resolveSharedCachesDirectory(target))
     }
 
     val runServer = target.tasks.register<RunServerTask>(Constants.Tasks.RUN_SERVER) {
@@ -52,7 +52,7 @@ public class RunPaper : Plugin<Project> {
 
     target.tasks.register<Delete>("cleanPaperclipCache") {
       this.group = Constants.RUN_PAPER
-      this.description = "Deletes all cached Paperclips."
+      this.description = "Delete all locally cached Paperclips."
       this.delete(this@RunPaper.resolveSharedCachesDirectory(target))
     }
   }

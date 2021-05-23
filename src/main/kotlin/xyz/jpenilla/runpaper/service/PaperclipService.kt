@@ -41,7 +41,7 @@ import java.nio.file.StandardCopyOption
 
 internal abstract class PaperclipService : BuildService<PaperclipService.Parameters>, AutoCloseable {
   interface Parameters : BuildServiceParameters {
-    fun getCacheDirectory(): DirectoryProperty // Gradle requires get prefix
+    val cacheDirectory: DirectoryProperty
   }
 
   companion object {
@@ -53,7 +53,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     .enable(SerializationFeature.INDENT_OUTPUT)
     .addModule(kotlinModule())
     .build()
-  private val versionsFile: Provider<RegularFile> = this.parameters.getCacheDirectory().file("versions.json")
+  private val versionsFile: Provider<RegularFile> = this.parameters.cacheDirectory.file("versions.json")
 
   private var versions = this.loadOrCreateVersions()
 
@@ -61,7 +61,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     this.paperclips().map { it.dir(minecraftVersion) }
 
   private fun paperclips(): Provider<Directory> =
-    this.parameters.getCacheDirectory().dir("paperclips")
+    this.parameters.cacheDirectory.dir("paperclips")
 
   fun resolvePaperclip(minecraftVersion: String, paperBuild: RunServerTask.PaperBuild): File {
     this.versions = this.loadOrCreateVersions()
@@ -98,9 +98,11 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val tempFile = Files.createTempDirectory("runpaper")
       .resolve("paperclip-$minecraftVersion-$build-${System.currentTimeMillis()}.jar.tmp")
 
-    val channel = Channels.newChannel(downloadURL.openStream())
-    val outputStream = FileOutputStream(tempFile.toFile())
-    outputStream.channel.transferFrom(channel, 0, Long.MAX_VALUE)
+    FileOutputStream(tempFile.toFile()).use { fileOutputStream ->
+      Channels.newChannel(downloadURL.openStream()).use { downloadChannel ->
+        fileOutputStream.channel.transferFrom(downloadChannel, 0, Long.MAX_VALUE)
+      }
+    }
 
     LOGGER.lifecycle("Done downloading Paper.")
 
@@ -108,7 +110,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val downloadedFileHash = FileHashing.sha256(tempFile.toFile())
     if (downloadedFileHash != download.sha256) {
       Files.delete(tempFile)
-      LOGGER.lifecycle("Invalid SHA256 hash for downloaded file: '${download.name}', deleting.")
+      LOGGER.lifecycle("Invalid SHA256 hash for downloaded file: '{}', deleting.", download.name)
       this.logExpectedActual(download.sha256, downloadedFileHash)
       error("Failed to verify SHA256 hash of downloaded file.")
     }
@@ -144,8 +146,8 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   }
 
   private fun logExpectedActual(expected: String, actual: String) {
-    LOGGER.lifecycle(" > Expected: $expected")
-    LOGGER.lifecycle(" > Actual: $actual")
+    LOGGER.lifecycle(" > Expected: {}", expected)
+    LOGGER.lifecycle(" > Actual: {}", actual)
   }
 
   override fun close() {
@@ -161,7 +163,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   }
 
   private fun writeVersions() {
-    this.parameters.getCacheDirectory().get().asFile.mkdirs()
+    this.parameters.cacheDirectory.get().asFile.mkdirs()
     this.mapper.writeValue(this.versionsFile.get().asFile, this.versions)
   }
 
