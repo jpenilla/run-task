@@ -38,14 +38,15 @@ internal object FileHashing {
       throw RuntimeException(ex)
     }
 
-    return FileInputStream(input).use { inputStream ->
-      val stream = DigestInputStream(inputStream, digest)
-      val buffer = ByteArray(1024)
-      while (stream.read(buffer) != -1) {
-        // reading
+    FileInputStream(input).use { fileInputStream ->
+      val stream = DigestInputStream(fileInputStream, digest)
+      stream.use { digestStream ->
+        val buffer = ByteArray(1024)
+        while (digestStream.read(buffer) != -1) {
+          // reading
+        }
       }
-      stream.close()
-      stream.messageDigest.digest()
+      return stream.messageDigest.digest()
     }
   }
 

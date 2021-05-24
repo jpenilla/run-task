@@ -17,7 +17,22 @@
 package xyz.jpenilla.runpaper
 
 import org.gradle.api.Project
+import org.gradle.api.provider.Property
+import org.gradle.kotlin.dsl.property
+import xyz.jpenilla.runpaper.task.RunServerTask
 
 public open class RunPaperExtension(private val project: Project) {
+  internal val detectPluginJar: Property<Boolean> = this.project.objects.property<Boolean>().convention(true)
 
+  /**
+   * By default, Run Paper will attempt to discover your plugin `jar` or `shadowJar` and automatically add it to
+   * the [RunServerTask.pluginJars] file collection. In some configurations, this behavior may not be desired,
+   * and therefore this option exists to disable it.
+   *
+   * Note that the plugin jar discovery behavior is only applicable for the default `runServer` task created by
+   * Run Paper, if you create your own [RunServerTask]s you will need to manually add plugin jars regardless.
+   */
+  public fun disablePluginJarDetection() {
+    this.detectPluginJar.set(false)
+  }
 }

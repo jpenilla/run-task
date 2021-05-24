@@ -28,7 +28,7 @@ import java.io.File
 
 public class RunPaper : Plugin<Project> {
   override fun apply(target: Project) {
-    target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
+    val runPaperExtension = target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
 
     target.gradle.sharedServices.registerIfAbsent(Constants.Services.PAPERCLIP, PaperclipService::class) {
       this.maxParallelUsages.set(1)
@@ -42,12 +42,14 @@ public class RunPaper : Plugin<Project> {
       this.description = "Run a Paper server for plugin testing."
     }
     target.afterEvaluate {
+      if (!runPaperExtension.detectPluginJar.get()) return@afterEvaluate
+
       runServer.configure {
         // Try to find plugin jar & task dependency automatically
         val taskDependency = this.resolveTaskDependency()
         if (taskDependency != null) {
           this.dependsOn(taskDependency)
-          this.pluginJars.from(taskDependency.archiveFile)
+          this.pluginJars(taskDependency.archiveFile)
         }
       }
     }

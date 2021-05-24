@@ -26,6 +26,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildServiceRegistration
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.getByName
@@ -43,11 +44,17 @@ import java.io.File
 public abstract class RunServerTask : JavaExec() {
   private val minecraftVersion: Property<String> = this.project.objects.property()
   private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.LATEST)
-  private val runDirectory: DirectoryProperty = this.project.objects.directoryProperty().convention(this.project.layout.projectDirectory.dir("run"))
 
   private val paperclipService: Provider<PaperclipService> = this.project.gradle.sharedServices.registrations
     .named<BuildServiceRegistration<PaperclipService, PaperclipService.Parameters>>(Constants.Services.PAPERCLIP).map { it.service.get() }
   private val paperclipJar: RegularFileProperty = this.project.objects.fileProperty()
+
+  /**
+   * The run directory for the test server.
+   * Defaults to `run` in the project directory.
+   */
+  @Internal
+  public val runDirectory: DirectoryProperty = this.project.objects.directoryProperty().convention(this.project.layout.projectDirectory.dir("run"))
 
   /**
    * The collection of plugin jars to load. Run Paper will attempt to locate
@@ -135,16 +142,6 @@ public abstract class RunServerTask : JavaExec() {
   }
 
   /**
-   * Gets the currently configured run directory
-   * for the test server.
-   *
-   * @return currently configured run directory
-   */
-  public fun runDirectory(): File {
-    return this.runDirectory.get().asFile
-  }
-
-  /**
    * Sets a custom Paperclip to use for this task. By default,
    * Run Paper will resolve a Paperclip using the Paper downloads
    * API, however you can use this function to override that
@@ -166,6 +163,24 @@ public abstract class RunServerTask : JavaExec() {
    */
   public fun paperclip(file: Provider<RegularFile>) {
     this.paperclipJar.set(file)
+  }
+
+  /**
+   * Convenience method for easily adding jars to [pluginJars].
+   *
+   * @param jars jars to add
+   */
+  public fun pluginJars(vararg jars: File) {
+    this.pluginJars.from(jars)
+  }
+
+  /**
+   * Convenience method for easily adding jars to [pluginJars].
+   *
+   * @param jars jars to add
+   */
+  public fun pluginJars(vararg jars: Provider<RegularFile>) {
+    this.pluginJars.from(jars)
   }
 
   /**
