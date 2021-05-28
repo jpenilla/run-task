@@ -11,7 +11,7 @@ plugins:
 
 versions:
   shadow: 7.0.0
-  jackson: 2.12.2
+  jackson: 2.12.3
 
 dependencies:
   shadow:
