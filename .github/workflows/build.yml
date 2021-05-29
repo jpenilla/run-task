@@ -1,5 +1,11 @@
 name: "build"
-on: [ "pull_request", "push" ]
+on:
+  push:
+    branches: "*"
+    tags-ignore: [ "*" ]
+  pull_request:
+  release:
+    types: [ released ]
 jobs:
   build:
     strategy:
@@ -12,7 +18,8 @@ jobs:
     steps:
       - name: "checkout repository"
         uses: "actions/checkout@v2"
-      - uses: gradle/wrapper-validation-action@v1
+      - name: "validate gradle wrapper"
+        uses: gradle/wrapper-validation-action@v1
       - name: "setup jdk ${{ matrix.java }}"
         uses: "actions/setup-java@v2"
         with:
@@ -20,3 +27,22 @@ jobs:
           java-version: "${{ matrix.java }}"
       - name: "build"
         run: "./gradlew build"
+      - name: "determine status"
+        run: |
+          if [ "$(./gradlew properties | awk '/^version:/ { print $2; }' | grep '\-SNAPSHOT')" ]; then
+            echo "STATUS=snapshot" >> $GITHUB_ENV
+          else
+            echo "STATUS=release" >> $GITHUB_ENV
+          fi
+      - name: "publish snapshot"
+        if: "${{ env.STATUS != 'release' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}"
+        run: ./gradlew publish
+        env:
+          ORG_GRADLE_PROJECT_jmpUsername: "${{ secrets.JMP_REPO_USER }}"
+          ORG_GRADLE_PROJECT_jmpPassword: "${{ secrets.JMP_REPO_PASSWORD }}"
+      - name: "publish release"
+        if: "${{ env.STATUS == 'release' && github.event_name == 'release' }}"
+        run: ./gradlew publishPlugins
+        env:
+          ORG_GRADLE_PROJECT_pluginPortalApiKey: "${{ secrets.GRADLE_PLUGIN_PORTAL_KEY }}"
+          ORG_GRADLE_PROJECT_pluginPortalApiSecret: "${{ secrets.GRADLE_PLUGIN_PORTAL_SECRET }}"
