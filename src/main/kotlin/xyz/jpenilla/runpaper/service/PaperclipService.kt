@@ -35,6 +35,7 @@ import xyz.jpenilla.runpaper.task.RunServerTask
 import xyz.jpenilla.runpaper.util.FileHashing
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.URL
 import java.nio.channels.Channels
 import java.nio.file.Files
@@ -79,15 +80,17 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       if (jars.isEmpty()) {
         continue
       }
-      try {
-        while (jars.size > perVersionCacheSize) {
-          val oldestBuild = jars.keys.minOrNull() ?: error("Could not determine oldest build.")
-          val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
-          version.knownJars.remove(oldestBuild)
-          this.paperclipsFor(versionName).map { it.file(removed.fileName) }.get().asFile.delete()
+      while (jars.size > perVersionCacheSize) {
+        val oldestBuild = jars.keys.minOrNull() ?: error("Could not determine oldest build.")
+        val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
+        version.knownJars.remove(oldestBuild)
+
+        val oldPaperclipFile = this.paperclipsFor(versionName).get().file(removed.fileName).asFile
+        try {
+          oldPaperclipFile.delete()
+        } catch (ex: IOException) {
+          LOGGER.warn("Failed to delete Paperclip at {}", oldPaperclipFile.path, ex)
         }
-      } finally {
-        // Write to disk even if there is an IOException when deleting a Paperclip file
         this.writeVersions()
       }
     }
