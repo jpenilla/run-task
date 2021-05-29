@@ -60,6 +60,39 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
 
   private var versions = this.loadOrCreateVersions()
 
+  init {
+    this.cleanLocalCache()
+  }
+
+  /**
+   * Cleans the local Paperclip cache. We only keep a certain amount of Paperclips
+   * for each Minecraft version. Paperclips fetched by version number and not using
+   * [RunServerTask.PaperBuild.LATEST] will not be cleaned up, the `cleanPaperclipCache`
+   * task must be used to fully clear the cache for this.
+   */
+  private fun cleanLocalCache() {
+    // how many Paperclips to cache for each Minecraft version
+    val perVersionCacheSize = 5
+
+    for ((versionName, version) in this.versions.versions) {
+      val jars = version.knownJars.filter { !it.value.keep }.toMutableMap()
+      if (jars.isEmpty()) {
+        continue
+      }
+      try {
+        while (jars.size > perVersionCacheSize) {
+          val oldestBuild = jars.keys.minOrNull() ?: error("Could not determine oldest build.")
+          val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
+          version.knownJars.remove(oldestBuild)
+          this.paperclipsFor(versionName).map { it.file(removed.fileName) }.get().asFile.delete()
+        }
+      } finally {
+        // Write to disk even if there is an IOException when deleting a Paperclip file
+        this.writeVersions()
+      }
+    }
+  }
+
   private fun paperclipsFor(minecraftVersion: String): Provider<Directory> =
     this.paperclips().map { it.dir(minecraftVersion) }
 
@@ -129,14 +162,20 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
 
     Files.move(tempFile, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
 
-    version.knownJars[build] = PaperclipJar(build, fileName, download.sha256)
+    version.knownJars[build] = PaperclipJar(
+      build,
+      fileName,
+      download.sha256,
+      // If the build was specifically requested, (as opposed to resolved as latest) mark the jar for keeping
+      paperBuild !== RunServerTask.PaperBuild.LATEST
+    )
     this.writeVersions()
 
     return destination
   }
 
   private fun resolveBuildNumber(minecraftVersion: String, paperBuild: RunServerTask.PaperBuild): Int {
-    if (paperBuild != RunServerTask.PaperBuild.LATEST) {
+    if (paperBuild !== RunServerTask.PaperBuild.LATEST) {
       return paperBuild.buildNumber
     }
     if (this.parameters.offlineMode.get()) {
@@ -187,7 +226,12 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   private fun unknownMinecraftVersion(minecraftVersion: String): Nothing =
     error("Unknown Minecraft Version: $minecraftVersion")
 
-  data class PaperclipJar(val buildNumber: Int, val fileName: String, val sha256: String)
+  data class PaperclipJar(
+    val buildNumber: Int,
+    val fileName: String,
+    val sha256: String,
+    val keep: Boolean = false
+  )
 
   data class Versions(val versions: MutableMap<String, Version> = HashMap())
 
