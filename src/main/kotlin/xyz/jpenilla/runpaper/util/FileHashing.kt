@@ -18,7 +18,6 @@ package xyz.jpenilla.runpaper.util
 
 import java.io.File
 import java.io.FileInputStream
-import java.math.BigInteger
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -51,11 +50,14 @@ internal object FileHashing {
   }
 
   private fun toHexString(hash: ByteArray): String {
-    val no = BigInteger(1, hash)
-    var hashString = no.toString(16)
-    while (hashString.length < 32) {
-      hashString = "0$hashString"
+    val hexString = StringBuilder(2 * hash.size)
+    for (byte in hash) {
+      val hex = Integer.toHexString(0xff and byte.toInt())
+      if (hex.length == 1) {
+        hexString.append('0')
+      }
+      hexString.append(hex)
     }
-    return hashString
+    return hexString.toString()
   }
 }
