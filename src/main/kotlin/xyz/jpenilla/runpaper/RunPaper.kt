@@ -38,24 +38,23 @@ public class RunPaper : Plugin<Project> {
     }
 
     val runServer = target.tasks.register<RunServerTask>(Constants.Tasks.RUN_SERVER) {
-      this.group = Constants.RUN_PAPER
+      this.group = Constants.TASK_GROUP
       this.description = "Run a Paper server for plugin testing."
     }
     target.afterEvaluate {
       if (!runPaperExtension.detectPluginJar.get()) return@afterEvaluate
 
       runServer.configure {
-        // Try to find plugin jar & task dependency automatically
+        // Try to find plugin jar
         val taskDependency = this.resolveTaskDependency()
         if (taskDependency != null) {
-          this.dependsOn(taskDependency)
           this.pluginJars(taskDependency.archiveFile)
         }
       }
     }
 
     target.tasks.register<Delete>("cleanPaperclipCache") {
-      this.group = Constants.RUN_PAPER
+      this.group = Constants.TASK_GROUP
       this.description = "Delete all locally cached Paperclips."
       this.delete(this@RunPaper.resolveSharedCachesDirectory(target))
     }

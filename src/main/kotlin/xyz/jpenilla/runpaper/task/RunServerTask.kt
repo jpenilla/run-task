@@ -43,10 +43,9 @@ import java.io.File
 @Suppress("unused")
 public abstract class RunServerTask : JavaExec() {
   private val minecraftVersion: Property<String> = this.project.objects.property()
-  private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.LATEST)
-
+  private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.Latest)
   private val paperclipService: Provider<PaperclipService> = this.project.gradle.sharedServices.registrations
-    .named<BuildServiceRegistration<PaperclipService, PaperclipService.Parameters>>(Constants.Services.PAPERCLIP).map { it.service.get() }
+    .named<BuildServiceRegistration<PaperclipService, PaperclipService.Parameters>>(Constants.Services.PAPERCLIP).flatMap { it.service }
   private val paperclipJar: RegularFileProperty = this.project.objects.fileProperty()
 
   /**
@@ -80,7 +79,11 @@ public abstract class RunServerTask : JavaExec() {
     this.standardInput = System.`in`
     this.workingDir(this.runDirectory)
     val paperclip = this.paperclipJar.orElse {
-      this.paperclipService.get().resolvePaperclip(this.minecraftVersion.get(), this.paperBuild.get())
+      this.paperclipService.get().resolvePaperclip(
+        this.project,
+        this.minecraftVersion.get(),
+        this.paperBuild.get()
+      )
     }.get().asFile
     this.classpath(paperclip)
 
@@ -112,7 +115,7 @@ public abstract class RunServerTask : JavaExec() {
   }
 
   /**
-   * Sets the build of Paper to use. By default, [PaperBuild.LATEST] is
+   * Sets the build of Paper to use. By default, [PaperBuild.Latest] is
    * used, which uses the latest build for the configured Minecraft version.
    *
    * @param paperBuild paper build
@@ -128,7 +131,7 @@ public abstract class RunServerTask : JavaExec() {
    * @param paperBuildNumber build number
    */
   public fun paperBuild(paperBuildNumber: Int) {
-    this.paperBuild.set(PaperBuild(paperBuildNumber))
+    this.paperBuild.set(PaperBuild.Specific(paperBuildNumber))
   }
 
   /**
@@ -186,13 +189,21 @@ public abstract class RunServerTask : JavaExec() {
   /**
    * Represents a build of Paper.
    */
-  public class PaperBuild internal constructor(internal val buildNumber: Int) {
+  public sealed class PaperBuild {
     public companion object {
       /**
        * [PaperBuild] instance pointing to the latest Paper build for the configured Minecraft version.
        */
-      public val LATEST: PaperBuild = PaperBuild(-1)
+      @Deprecated("Replaced by RunServerTask.PaperBuild.Latest.", replaceWith = ReplaceWith("RunServerTask.PaperBuild.Latest"))
+      public val LATEST: PaperBuild = Latest
     }
+
+    /**
+     * [PaperBuild] pointing to the latest Paper build for the configured Minecraft version.
+     */
+    public object Latest : PaperBuild()
+
+    public data class Specific internal constructor(internal val buildNumber: Int) : PaperBuild()
   }
 
   internal fun resolveTaskDependency(): AbstractArchiveTask? {

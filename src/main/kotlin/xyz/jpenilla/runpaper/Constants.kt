@@ -18,7 +18,7 @@ package xyz.jpenilla.runpaper
 
 internal object Constants {
   const val RUN_PAPER = "RunPaper"
-
+  const val TASK_GROUP = "run paper"
   const val GRADLE_CACHES_DIRECTORY_NAME = "caches"
 
   object Tasks {
@@ -27,6 +27,12 @@ internal object Constants {
 
   object Services {
     const val PAPERCLIP = "paperclip"
+  }
+
+  object Properties {
+    private fun runPaper(propertyName: String) = "xyz.jpenilla.run-paper.$propertyName"
+
+    val UPDATE_CHECK_FREQUENCY = this.runPaper("updateCheckFrequency")
   }
 
   object Extensions {

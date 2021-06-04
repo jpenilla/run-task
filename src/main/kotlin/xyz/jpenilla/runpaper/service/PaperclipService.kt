@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
@@ -29,9 +30,11 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import xyz.jpenilla.runpaper.Constants
 import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
 import xyz.jpenilla.runpaper.paperapi.Projects
 import xyz.jpenilla.runpaper.task.RunServerTask
+import xyz.jpenilla.runpaper.util.DurationParser
 import xyz.jpenilla.runpaper.util.FileHashing
 import java.io.File
 import java.io.FileOutputStream
@@ -40,6 +43,7 @@ import java.net.URL
 import java.nio.channels.Channels
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.time.Duration
 
 internal abstract class PaperclipService : BuildService<PaperclipService.Parameters>, AutoCloseable {
   interface Parameters : BuildServiceParameters {
@@ -68,7 +72,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   /**
    * Cleans the local Paperclip cache. We only keep a certain amount of Paperclips
    * for each Minecraft version. Paperclips fetched by version number and not using
-   * [RunServerTask.PaperBuild.LATEST] will not be cleaned up, the `cleanPaperclipCache`
+   * [RunServerTask.PaperBuild.Latest] will not be cleaned up, the `cleanPaperclipCache`
    * task must be used to fully clear the cache for this.
    */
   private fun cleanLocalCache() {
@@ -102,11 +106,15 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   private fun paperclips(): Provider<Directory> =
     this.parameters.cacheDirectory.dir("paperclips")
 
-  fun resolvePaperclip(minecraftVersion: String, paperBuild: RunServerTask.PaperBuild): File {
+  fun resolvePaperclip(
+    project: Project,
+    minecraftVersion: String,
+    paperBuild: RunServerTask.PaperBuild
+  ): File {
     this.versions = this.loadOrCreateVersions()
-    val build = this.resolveBuildNumber(minecraftVersion, paperBuild)
 
     val version = this.versions.versions.computeIfAbsent(minecraftVersion) { Version(it) }
+    val build = this.resolveBuildNumber(project, version, paperBuild)
 
     val possible = version.knownJars[build]
     if (possible != null && !this.parameters.refreshDependencies.get()) {
@@ -117,6 +125,10 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       val localPaperclip = this.paperclipsFor(minecraftVersion).get().file(possible.fileName).asFile
       val localBuildHash = FileHashing.sha256(localPaperclip)
       if (localBuildHash == possible.sha256) {
+        if (paperBuild is RunServerTask.PaperBuild.Specific) {
+          version.knownJars[build] = possible.copy(keep = true)
+          this.writeVersions()
+        }
         // Hash is good, return
         return localPaperclip
       }
@@ -170,34 +182,50 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       fileName,
       download.sha256,
       // If the build was specifically requested, (as opposed to resolved as latest) mark the jar for keeping
-      paperBuild !== RunServerTask.PaperBuild.LATEST
+      paperBuild is RunServerTask.PaperBuild.Specific
     )
     this.writeVersions()
 
     return destination
   }
 
-  private fun resolveBuildNumber(minecraftVersion: String, paperBuild: RunServerTask.PaperBuild): Int {
-    if (paperBuild !== RunServerTask.PaperBuild.LATEST) {
+  private fun resolveBuildNumber(
+    project: Project,
+    minecraftVersion: Version,
+    paperBuild: RunServerTask.PaperBuild
+  ): Int {
+    if (paperBuild is RunServerTask.PaperBuild.Specific) {
       return paperBuild.buildNumber
     }
+
     if (this.parameters.offlineMode.get()) {
       LOGGER.lifecycle("Offline mode enabled, attempting to use latest local build of Paper for Minecraft {}.", minecraftVersion)
       return this.resolveLatestLocalBuild(minecraftVersion)
     }
+
+    if (!this.parameters.refreshDependencies.get()) {
+      val checkFrequency = this.updateCheckFrequency(project)
+      val timeSinceLastCheck = System.currentTimeMillis() - minecraftVersion.lastUpdateCheck
+      if (timeSinceLastCheck <= checkFrequency.toMillis()) {
+        return this.resolveLatestLocalBuild(minecraftVersion)
+      }
+    }
+
     return this.resolveLatestRemoteBuild(minecraftVersion)
   }
 
-  private fun resolveLatestLocalBuild(minecraftVersion: String): Int {
-    val version = this.versions.versions[minecraftVersion] ?: this.unknownMinecraftVersion(minecraftVersion)
-    return version.knownJars.keys.maxOrNull() ?: this.unknownMinecraftVersion(minecraftVersion)
+  private fun resolveLatestLocalBuild(minecraftVersion: Version): Int {
+    return minecraftVersion.knownJars.keys.maxOrNull()
+      ?: this.unknownMinecraftVersion(minecraftVersion.name)
   }
 
-  private fun resolveLatestRemoteBuild(minecraftVersion: String): Int =
+  private fun resolveLatestRemoteBuild(minecraftVersion: Version): Int =
     try {
-      LOGGER.lifecycle("Fetching Paper builds for Minecraft {}...", minecraftVersion)
-      this.api.version(Projects.PAPER, minecraftVersion).builds.last().apply {
-        LOGGER.lifecycle("Latest build for {} is {}.", minecraftVersion, this)
+      LOGGER.lifecycle("Fetching Paper builds for Minecraft {}...", minecraftVersion.name)
+      this.api.version(Projects.PAPER, minecraftVersion.name).builds.last().apply {
+        LOGGER.lifecycle("Latest build for {} is {}.", minecraftVersion.name, this)
+        this@PaperclipService.versions.versions[minecraftVersion.name] = minecraftVersion.copy(lastUpdateCheck = System.currentTimeMillis())
+        this@PaperclipService.writeVersions()
       }
     } catch (ex: Exception) {
       LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
@@ -208,6 +236,18 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     LOGGER.lifecycle(" > Expected: {}", expected)
     LOGGER.lifecycle(" > Actual: {}", actual)
   }
+
+  private fun updateCheckFrequency(project: Project): Duration =
+    project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY).run {
+      if (this == null) {
+        return@run Duration.ofHours(1) // default to 1 hour if unset
+      }
+      try {
+        DurationParser.parse(this as String)
+      } catch (ex: DurationParser.InvalidDurationException) {
+        throw IllegalArgumentException("Unable to parse value for property '${Constants.Properties.UPDATE_CHECK_FREQUENCY}'.\n${ex.message}", ex)
+      }
+    }
 
   override fun close() {
   }
@@ -236,10 +276,13 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val keep: Boolean = false
   )
 
-  data class Versions(val versions: MutableMap<String, Version> = HashMap())
+  data class Versions(
+    val versions: MutableMap<String, Version> = HashMap()
+  )
 
   data class Version(
     val name: String,
-    val knownJars: MutableMap<Int, PaperclipJar> = HashMap()
+    val lastUpdateCheck: Long = 0L,
+    val knownJars: MutableMap<Int, PaperclipJar> = HashMap(),
   )
 }
