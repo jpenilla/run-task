@@ -34,13 +34,14 @@ import xyz.jpenilla.runpaper.Constants
 import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
 import xyz.jpenilla.runpaper.paperapi.Projects
 import xyz.jpenilla.runpaper.task.RunServerTask
+import xyz.jpenilla.runpaper.util.Downloader
 import xyz.jpenilla.runpaper.util.DurationParser
 import xyz.jpenilla.runpaper.util.FileHashing
+import xyz.jpenilla.runpaper.util.LoggingDownloadListener
+import xyz.jpenilla.runpaper.util.ProgressLoggerUtil
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
-import java.nio.channels.Channels
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.Duration
@@ -152,13 +153,13 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val tempFile = Files.createTempDirectory("runpaper")
       .resolve("paperclip-$minecraftVersion-$build-${System.currentTimeMillis()}.jar.tmp")
 
-    FileOutputStream(tempFile.toFile()).use { fileOutputStream ->
-      Channels.newChannel(downloadURL.openStream()).use { downloadChannel ->
-        fileOutputStream.channel.transferFrom(downloadChannel, 0, Long.MAX_VALUE)
-      }
-    }
+    val downloadResult = Downloader(downloadURL, tempFile)
+      .download(this.createDownloadListener(project))
 
-    LOGGER.lifecycle("Done downloading Paper.")
+    when (downloadResult) {
+      is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading Paper.")
+      is Downloader.Result.Failure -> throw IllegalStateException("Failed to download Paper.", downloadResult.throwable)
+    }
 
     // Verify SHA256 hash of downloaded jar
     val downloadedFileHash = FileHashing.sha256(tempFile.toFile())
@@ -229,6 +230,30 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   } catch (ex: Exception) {
     LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
     this.resolveLatestLocalBuild(minecraftVersion)
+  }
+
+  private fun createDownloadListener(project: Project): Downloader.ProgressListener {
+    // ProgressLogger is internal Gradle API and can technically be changed,
+    // (although it hasn't since 3.x) so we access it using reflection, and
+    // fallback to using LOGGER if it fails
+    val progressLogger = ProgressLoggerUtil.createProgressLogger(project, Constants.RUN_PAPER)
+    return if (progressLogger != null) {
+      LoggingDownloadListener(
+        progressLogger,
+        { state, message -> state.start("Downloading Paper", message) },
+        { state, message -> state.progress(message) },
+        { state -> state.completed() },
+        "Downloading Paperclip: ",
+        10L
+      )
+    } else {
+      LoggingDownloadListener(
+        LOGGER,
+        logger = { state, message -> state.lifecycle(message) },
+        prefix = "Downloading Paperclip: ",
+        updateRateMs = 1000L
+      )
+    }
   }
 
   private fun logExpectedActual(expected: String, actual: String) {
