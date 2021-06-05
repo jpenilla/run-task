@@ -219,18 +219,17 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       ?: this.unknownMinecraftVersion(minecraftVersion.name)
   }
 
-  private fun resolveLatestRemoteBuild(minecraftVersion: Version): Int =
-    try {
-      LOGGER.lifecycle("Fetching Paper builds for Minecraft {}...", minecraftVersion.name)
-      this.api.version(Projects.PAPER, minecraftVersion.name).builds.last().apply {
-        LOGGER.lifecycle("Latest build for {} is {}.", minecraftVersion.name, this)
-        this@PaperclipService.versions.versions[minecraftVersion.name] = minecraftVersion.copy(lastUpdateCheck = System.currentTimeMillis())
-        this@PaperclipService.writeVersions()
-      }
-    } catch (ex: Exception) {
-      LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
-      this.resolveLatestLocalBuild(minecraftVersion)
+  private fun resolveLatestRemoteBuild(minecraftVersion: Version): Int = try {
+    LOGGER.lifecycle("Fetching Paper builds for Minecraft {}...", minecraftVersion.name)
+    this.api.version(Projects.PAPER, minecraftVersion.name).builds.last().apply {
+      LOGGER.lifecycle("Latest build for {} is {}.", minecraftVersion.name, this)
+      this@PaperclipService.versions.versions[minecraftVersion.name] = minecraftVersion.copy(lastUpdateCheck = System.currentTimeMillis())
+      this@PaperclipService.writeVersions()
     }
+  } catch (ex: Exception) {
+    LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
+    this.resolveLatestLocalBuild(minecraftVersion)
+  }
 
   private fun logExpectedActual(expected: String, actual: String) {
     LOGGER.lifecycle(" > Expected: {}", expected)
