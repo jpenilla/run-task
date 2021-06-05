@@ -76,6 +76,10 @@ public abstract class RunServerTask : JavaExec() {
   }
 
   private fun configure() {
+    if (!this.minecraftVersion.isPresent) {
+      error("No Minecraft version was specified for the '${this.name}' task!")
+    }
+
     this.standardInput = System.`in`
     this.workingDir(this.runDirectory)
     val paperclip = this.paperclipJar.orElse {
