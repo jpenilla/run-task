@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "xyz.jpenilla"
-version = "1.0.2-SNAPSHOT"
+version = "1.0.2"
 description = "Gradle plugin adding a task to run a Paper Minecraft server"
 
 repositories {
