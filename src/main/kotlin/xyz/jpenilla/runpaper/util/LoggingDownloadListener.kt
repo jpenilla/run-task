@@ -50,12 +50,6 @@ internal class LoggingDownloadListener<S>(
       }
       return builder.toString()
     }
-
-    fun Duration.prettyPrint(): String =
-      this.toString()
-        .substring(2)
-        .replace("(\\d[HMS])(?!$)".toRegex(), "$1 ")
-        .toLowerCase()
   }
 
   private fun createMessage(bytesDownloaded: Long): String {

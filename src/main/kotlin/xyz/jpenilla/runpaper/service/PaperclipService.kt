@@ -35,10 +35,12 @@ import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
 import xyz.jpenilla.runpaper.paperapi.Projects
 import xyz.jpenilla.runpaper.task.RunServerTask
 import xyz.jpenilla.runpaper.util.Downloader
-import xyz.jpenilla.runpaper.util.DurationParser
 import xyz.jpenilla.runpaper.util.FileHashing
+import xyz.jpenilla.runpaper.util.InvalidDurationException
 import xyz.jpenilla.runpaper.util.LoggingDownloadListener
 import xyz.jpenilla.runpaper.util.ProgressLoggerUtil
+import xyz.jpenilla.runpaper.util.parseDuration
+import xyz.jpenilla.runpaper.util.prettyPrint
 import java.io.File
 import java.io.IOException
 import java.net.URL
@@ -153,11 +155,12 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val tempFile = Files.createTempDirectory("runpaper")
       .resolve("paperclip-$minecraftVersion-$build-${System.currentTimeMillis()}.jar.tmp")
 
+    val start = System.currentTimeMillis()
     val downloadResult = Downloader(downloadURL, tempFile)
       .download(this.createDownloadListener(project))
 
     when (downloadResult) {
-      is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading Paper.")
+      is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading Paper, took {}.", Duration.ofMillis(System.currentTimeMillis() - start).prettyPrint())
       is Downloader.Result.Failure -> throw IllegalStateException("Failed to download Paper.", downloadResult.throwable)
     }
 
@@ -267,8 +270,8 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
         return@run Duration.ofHours(1) // default to 1 hour if unset
       }
       try {
-        DurationParser.parse(this as String)
-      } catch (ex: DurationParser.InvalidDurationException) {
+        parseDuration(this as String)
+      } catch (ex: InvalidDurationException) {
         throw IllegalArgumentException("Unable to parse value for property '${Constants.Properties.UPDATE_CHECK_FREQUENCY}'.\n${ex.message}", ex)
       }
     }

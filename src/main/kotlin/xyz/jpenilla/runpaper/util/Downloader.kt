@@ -23,8 +23,10 @@ import java.nio.ByteBuffer
 import java.nio.channels.Channels
 import java.nio.channels.ReadableByteChannel
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit
 
 internal class Downloader(
   val remote: URL,
@@ -44,7 +46,7 @@ internal class Downloader(
     }
     this.started = true
 
-    val downloadThread = Thread {
+    val downloadFuture = CompletableFuture.runAsync {
       val connection = this.remote.openConnection()
       val expected = connection.contentLengthLong
       listener.onStart(expected)
@@ -58,7 +60,6 @@ internal class Downloader(
         }
       }
     }
-    downloadThread.start()
 
     val executor = Executors.newSingleThreadScheduledExecutor()
     val emitProgress = {
@@ -66,16 +67,13 @@ internal class Downloader(
         listener.updateProgress(this.downloaded)
       }
     }
-    val task = executor.scheduleAtFixedRate(emitProgress, 0L, listener.updateRateMs, MILLISECONDS)
+    val task = executor.scheduleAtFixedRate(emitProgress, 0L, listener.updateRateMs, TimeUnit.MILLISECONDS)
 
-    var failure: Exception? = null
+    var failure: Throwable? = null
     try {
-      downloadThread.join()
-    } catch (ex: InterruptedException) {
-      Thread.currentThread().interrupt()
-      failure = ex
-    } catch (ex: Exception) {
-      failure = ex
+      downloadFuture.join()
+    } catch (ex: CompletionException) {
+      failure = ex.cause ?: ex
     } finally {
       task.cancel(true)
       executor.shutdownNow()
