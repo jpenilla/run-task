@@ -16,8 +16,6 @@
  */
 package xyz.jpenilla.runpaper.task
 
-import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
@@ -30,7 +28,6 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.getByName
-import org.gradle.kotlin.dsl.hasPlugin
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.property
 import xyz.jpenilla.runpaper.Constants
@@ -210,9 +207,9 @@ public abstract class RunServerTask : JavaExec() {
     public data class Specific internal constructor(internal val buildNumber: Int) : PaperBuild()
   }
 
-  internal fun resolveTaskDependency(): AbstractArchiveTask? {
-    if (this.project.plugins.hasPlugin(ShadowPlugin::class)) {
-      return this.project.tasks.getByName<ShadowJar>("shadowJar")
+  internal fun resolvePluginJarTask(): AbstractArchiveTask? {
+    if (this.project.plugins.hasPlugin(Constants.Plugins.SHADOW_PLUGIN_ID)) {
+      return this.project.tasks.getByName<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME)
     }
     return this.project.tasks.findByName("jar") as? AbstractArchiveTask
   }

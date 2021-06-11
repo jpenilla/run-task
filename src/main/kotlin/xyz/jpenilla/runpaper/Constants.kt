@@ -21,6 +21,11 @@ internal object Constants {
   const val TASK_GROUP = "run paper"
   const val GRADLE_CACHES_DIRECTORY_NAME = "caches"
 
+  object Plugins {
+    const val SHADOW_PLUGIN_ID = "com.github.johnrengelman.shadow"
+    const val SHADOW_JAR_TASK_NAME = "shadowJar"
+  }
+
   object Tasks {
     const val RUN_SERVER = "runServer"
   }

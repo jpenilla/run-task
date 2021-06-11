@@ -10,15 +10,9 @@ plugins:
   com.gradle.plugin-publish: 0.15.0
 
 versions:
-  shadow: 7.0.0
   jackson: 2.12.3
 
 dependencies:
-  shadow:
-    group: gradle.plugin.com.github.jengelman.gradle.plugins
-    name: shadow
-    version: { ref: shadow }
-
   jacksonModuleKotlin:
     group: com.fasterxml.jackson.module
     name: jackson-module-kotlin

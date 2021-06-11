@@ -46,9 +46,9 @@ public class RunPaper : Plugin<Project> {
 
       runServer.configure {
         // Try to find plugin jar
-        val taskDependency = this.resolveTaskDependency()
-        if (taskDependency != null) {
-          this.pluginJars(taskDependency.archiveFile)
+        val pluginJarTask = this.resolvePluginJarTask()
+        if (pluginJarTask != null) {
+          this.pluginJars(pluginJarTask.archiveFile)
         }
       }
     }
