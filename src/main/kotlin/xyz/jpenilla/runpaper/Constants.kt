@@ -18,7 +18,7 @@ package xyz.jpenilla.runpaper
 
 internal object Constants {
   const val RUN_PAPER = "RunPaper"
-  const val TASK_GROUP = "run paper"
+  const val TASK_GROUP = "Run Paper"
   const val GRADLE_CACHES_DIRECTORY_NAME = "caches"
 
   object Plugins {

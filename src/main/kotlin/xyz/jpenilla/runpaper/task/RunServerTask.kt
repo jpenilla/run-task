@@ -23,9 +23,11 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildServiceRegistration
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.named
@@ -46,6 +48,23 @@ public abstract class RunServerTask : JavaExec() {
   private val paperclipJar: RegularFileProperty = this.project.objects.fileProperty()
 
   /**
+   * Run Paper makes use of Paper's `add-plugin` command line option in order to
+   * load the files in [pluginJars] as plugins. This option was implemented during
+   * the Minecraft 1.16.5 development cycle, and does not exist in prior versions.
+   *
+   * Enabling legacy plugin loading instructs Run Paper to copy jars into the plugins
+   * folder instead of using the aforementioned command line option, for better
+   * compatibility with legacy Minecraft versions.
+   *
+   * If left un-configured, Run Paper will attempt to automatically
+   * determine the appropriate setting based on the configured
+   * Minecraft version for this task.
+   */
+  @get:Optional
+  @get:Input
+  public abstract val legacyPluginLoading: Property<Boolean>
+
+  /**
    * The run directory for the test server.
    * Defaults to `run` in the project directory.
    */
@@ -61,8 +80,8 @@ public abstract class RunServerTask : JavaExec() {
    * Adding files to this collection may also be useful for projects which produce
    * more than one plugin jar, or to load dependency plugins.
    */
-  @InputFiles
-  public val pluginJars: ConfigurableFileCollection = this.project.objects.fileCollection()
+  @get:InputFiles
+  public abstract val pluginJars: ConfigurableFileCollection
 
   override fun exec() {
     this.configure()
@@ -79,13 +98,16 @@ public abstract class RunServerTask : JavaExec() {
 
     this.standardInput = System.`in`
     this.workingDir(this.runDirectory)
-    val paperclip = this.paperclipJar.orElse {
+
+    val paperclip = if (this.paperclipJar.isPresent) {
+      this.paperclipJar.get().asFile
+    } else {
       this.paperclipService.get().resolvePaperclip(
         this.project,
         this.minecraftVersion.get(),
         this.paperBuild.get()
       )
-    }.get().asFile
+    }
     this.classpath(paperclip)
 
     // Set disable watchdog property for debugging
@@ -94,8 +116,9 @@ public abstract class RunServerTask : JavaExec() {
     this.systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", true)
 
     // Add our arguments
-    this.args("--nogui")
-    this.args(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
+    if (this.minecraftVersionIsSameOrNewerThan(1, 15)) {
+      this.args("--nogui")
+    }
   }
 
   private fun beforeExec() {
@@ -104,6 +127,56 @@ public abstract class RunServerTask : JavaExec() {
     if (!workingDir.exists()) {
       workingDir.mkdirs()
     }
+
+    val plugins = workingDir.resolve("plugins")
+    if (!plugins.exists()) {
+      plugins.mkdirs()
+    }
+
+    val prefix = "_run-paper_plugin_"
+    val extension = ".jar"
+
+    // Delete any jars left over from previous legacy mode runs
+    plugins.listFiles()
+      ?.filter { it.isFile }
+      ?.filter { it.name.startsWith(prefix) && it.name.endsWith(extension) }
+      ?.forEach { it.delete() }
+
+    // Add plugins
+    if (this.addPluginArgumentSupported()) {
+      this.args(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
+    } else {
+      this.pluginJars.files.forEachIndexed { i, jar ->
+        jar.copyTo(plugins.resolve(prefix + i + extension))
+      }
+    }
+  }
+
+  private fun addPluginArgumentSupported(): Boolean {
+    if (this.legacyPluginLoading.isPresent) {
+      return !this.legacyPluginLoading.get()
+    }
+
+    return this.minecraftVersionIsSameOrNewerThan(1, 16, 5)
+  }
+
+  private fun minecraftVersionIsSameOrNewerThan(vararg other: Int): Boolean {
+    val minecraft = this.minecraftVersion.get().split(".").map {
+      try {
+        it.toInt()
+      } catch (ex: NumberFormatException) {
+        return true
+      }
+    }
+
+    for ((current, target) in minecraft zip other.toList()) {
+      if (current < target) return false
+      if (current > target) return true
+      // If equal, check next subversion
+    }
+
+    // version is same
+    return true
   }
 
   /**
@@ -185,6 +258,13 @@ public abstract class RunServerTask : JavaExec() {
    */
   public fun pluginJars(vararg jars: Provider<RegularFile>) {
     this.pluginJars.from(jars)
+  }
+
+  /**
+   * Convenience method setting [legacyPluginLoading] to `true`.
+   */
+  public fun legacyPluginLoading() {
+    this.legacyPluginLoading.set(true)
   }
 
   /**
