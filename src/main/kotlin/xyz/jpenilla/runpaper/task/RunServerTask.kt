@@ -42,10 +42,17 @@ import java.io.File
  */
 @Suppress("unused")
 public abstract class RunServerTask : JavaExec() {
-  private val minecraftVersion: Property<String> = this.project.objects.property()
   private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.Latest)
   private val paperclipService: Provider<PaperclipService> = this.project.gradle.sharedServices.registrations
     .named<BuildServiceRegistration<PaperclipService, PaperclipService.Parameters>>(Constants.Services.PAPERCLIP).flatMap { it.service }
+
+  /**
+   * The Minecraft version for this [RunServerTask]. This version will be used
+   * for resolving Paperclips from the Paper downloads API, as well as for
+   * version-specific logic when launching the server.
+   */
+  @get:Input
+  public abstract val minecraftVersion: Property<String>
 
   /**
    * Setting this property allows configuring a custom jar file to start the
