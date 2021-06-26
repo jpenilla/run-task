@@ -24,6 +24,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildServiceRegistration
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
@@ -45,7 +46,15 @@ public abstract class RunServerTask : JavaExec() {
   private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.Latest)
   private val paperclipService: Provider<PaperclipService> = this.project.gradle.sharedServices.registrations
     .named<BuildServiceRegistration<PaperclipService, PaperclipService.Parameters>>(Constants.Services.PAPERCLIP).flatMap { it.service }
-  private val paperclipJar: RegularFileProperty = this.project.objects.fileProperty()
+
+  /**
+   * Setting this property allows configuring a custom jar file to start the
+   * server from. If left un-configured, Run Paper will resolve a Paperclip
+   * using the Paper downloads API.
+   */
+  @get:Optional
+  @get:InputFile
+  public abstract val serverJar: RegularFileProperty
 
   /**
    * Run Paper makes use of Paper's `add-plugin` command line option in order to
@@ -99,8 +108,8 @@ public abstract class RunServerTask : JavaExec() {
     this.standardInput = System.`in`
     this.workingDir(this.runDirectory)
 
-    val paperclip = if (this.paperclipJar.isPresent) {
-      this.paperclipJar.get().asFile
+    val paperclip = if (this.serverJar.isPresent) {
+      this.serverJar.get().asFile
     } else {
       this.paperclipService.get().resolvePaperclip(
         this.project,
@@ -219,27 +228,41 @@ public abstract class RunServerTask : JavaExec() {
   }
 
   /**
-   * Sets a custom Paperclip to use for this task. By default,
-   * Run Paper will resolve a Paperclip using the Paper downloads
-   * API, however you can use this function to override that
-   * behavior.
+   * Convenience method for configuring the [serverJar] property.
    *
-   * @param file paperclip file
+   * @param file server jar file
    */
+  @Deprecated("Replaced by serverJar.", replaceWith = ReplaceWith("serverJar(file)"))
   public fun paperclip(file: File) {
-    this.paperclipJar.set(file)
+    this.serverJar.set(file)
   }
 
   /**
-   * Sets a custom Paperclip to use for this task. By default,
-   * Run Paper will resolve a Paperclip using the Paper downloads
-   * API, however you can use this function to override that
-   * behavior.
+   * Convenience method for configuring the [serverJar] property.
    *
-   * @param file paperclip file provider
+   * @param file server jar file provider
    */
+  @Deprecated("Replaced by serverJar.", replaceWith = ReplaceWith("serverJar(file)"))
   public fun paperclip(file: Provider<RegularFile>) {
-    this.paperclipJar.set(file)
+    this.serverJar.set(file)
+  }
+
+  /**
+   * Convenience method for configuring the [serverJar] property.
+   *
+   * @param file server jar file
+   */
+  public fun serverJar(file: File) {
+    this.serverJar.set(file)
+  }
+
+  /**
+   * Convenience method for configuring the [serverJar] property.
+   *
+   * @param file server jar file provider
+   */
+  public fun serverJar(file: Provider<RegularFile>) {
+    this.serverJar.set(file)
   }
 
   /**
