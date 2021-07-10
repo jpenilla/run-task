@@ -18,8 +18,13 @@ package xyz.jpenilla.runpaper
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFile
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Delete
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.registerIfAbsent
 import xyz.jpenilla.runpaper.service.PaperclipService
@@ -46,9 +51,9 @@ public class RunPaper : Plugin<Project> {
 
       runServer.configure {
         // Try to find plugin jar
-        val pluginJarTask = this.resolvePluginJarTask()
+        val pluginJarTask = target.pluginJar()
         if (pluginJarTask != null) {
-          this.pluginJars(pluginJarTask.archiveFile)
+          this.pluginJars(pluginJarTask)
         }
       }
     }
@@ -62,5 +67,21 @@ public class RunPaper : Plugin<Project> {
 
   private fun resolveSharedCachesDirectory(project: Project): File {
     return project.gradle.gradleUserHomeDir.resolve(Constants.GRADLE_CACHES_DIRECTORY_NAME).resolve(Constants.RUN_PAPER).resolve("v1")
+  }
+
+  private fun Project.pluginJar(): Provider<RegularFile>? {
+    when {
+      this.plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) -> {
+        val reobfJar = this.tasks.named(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME)
+        return layout.file(reobfJar.map { it.outputs.files.singleFile })
+      }
+      this.plugins.hasPlugin(Constants.Plugins.SHADOW_PLUGIN_ID) -> {
+        return this.tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
+      }
+      else -> {
+        val jar = this.tasks.findByName(JavaPlugin.JAR_TASK_NAME) as? AbstractArchiveTask ?: return null
+        return jar.archiveFile
+      }
+    }
   }
 }

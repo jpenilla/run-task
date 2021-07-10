@@ -24,6 +24,9 @@ internal object Constants {
   object Plugins {
     const val SHADOW_PLUGIN_ID = "com.github.johnrengelman.shadow"
     const val SHADOW_JAR_TASK_NAME = "shadowJar"
+
+    const val PAPERWEIGHT_USERDEV_PLUGIN_ID = "io.papermc.paperweight.userdev"
+    const val PAPERWEIGHT_REOBF_JAR_TASK_NAME = "reobfJar"
   }
 
   object Tasks {
