@@ -149,7 +149,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     }
     LOGGER.lifecycle("Downloading Paper {} build {}...", minecraftVersion, build)
     val buildResponse = this.api.build(Projects.PAPER, minecraftVersion, build)
-    val download = buildResponse.downloads.values.first()
+    val download = buildResponse.downloads["application"] ?: error("Could not find download.")
     val downloadLink = this.api.downloadURL(Projects.PAPER, minecraftVersion, build, download)
     val downloadURL = URL(downloadLink)
 
