@@ -17,6 +17,10 @@ dependencies:
     group: com.fasterxml.jackson.module
     name: jackson-module-kotlin
     version: { ref: jackson }
+  paperweightUserdev:
+    group: io.papermc.paperweight.userdev
+    name: io.papermc.paperweight.userdev.gradle.plugin
+    version: 1.1.9-LOCAL-SNAPSHOT # todo
 
 bundles:
   jackson:

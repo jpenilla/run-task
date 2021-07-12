@@ -13,12 +13,15 @@ version = "1.0.4-SNAPSHOT"
 description = "Gradle plugin adding a task to run a Paper Minecraft server"
 
 repositories {
+  mavenLocal() // todo
   mavenCentral()
   gradlePluginPortal()
+  maven("https://papermc.io/repo/repository/maven-public/")
 }
 
 dependencies {
   implementation(libs.bundles.jackson)
+  compileOnly(libs.paperweightUserdev)
 }
 
 kotlin {

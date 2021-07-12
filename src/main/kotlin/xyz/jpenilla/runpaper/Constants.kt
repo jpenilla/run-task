@@ -30,7 +30,9 @@ internal object Constants {
   }
 
   object Tasks {
+    const val CLEAN_PAPERCLIP_CACHE = "cleanPaperclipCache"
     const val RUN_SERVER = "runServer"
+    const val RUN_MOJANG_MAPPED_SERVER = "runMojangMappedServer"
   }
 
   object Services {
