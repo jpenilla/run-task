@@ -22,7 +22,6 @@ import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
-import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
 import org.gradle.api.logging.Logger
@@ -36,18 +35,26 @@ import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
 import xyz.jpenilla.runpaper.paperapi.Projects
 import xyz.jpenilla.runpaper.task.RunServerTask
 import xyz.jpenilla.runpaper.util.Downloader
-import xyz.jpenilla.runpaper.util.FileHashing
 import xyz.jpenilla.runpaper.util.InvalidDurationException
 import xyz.jpenilla.runpaper.util.LoggingDownloadListener
 import xyz.jpenilla.runpaper.util.ProgressLoggerUtil
 import xyz.jpenilla.runpaper.util.parseDuration
+import xyz.jpenilla.runpaper.util.path
 import xyz.jpenilla.runpaper.util.prettyPrint
-import java.io.File
+import xyz.jpenilla.runpaper.util.sha256
 import java.io.IOException
 import java.net.URL
-import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Duration
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.bufferedReader
+import kotlin.io.path.bufferedWriter
+import kotlin.io.path.createDirectories
+import kotlin.io.path.createTempDirectory
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.isRegularFile
+import kotlin.io.path.moveTo
 
 internal abstract class PaperclipService : BuildService<PaperclipService.Parameters>, AutoCloseable {
   interface Parameters : BuildServiceParameters {
@@ -84,7 +91,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val perVersionCacheSize = 5
 
     for ((versionName, version) in this.versions.versions) {
-      val jars = version.knownJars.filter { !it.value.keep }.toMutableMap()
+      val jars = version.knownJars.filterNot { it.value.keep }.toMutableMap()
       if (jars.isEmpty()) {
         continue
       }
@@ -93,28 +100,28 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
         val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
         version.knownJars.remove(oldestBuild)
 
-        val oldPaperclipFile = this.paperclipsFor(versionName).get().file(removed.fileName).asFile
+        val oldPaperclipFile = this.paperclipsFor(versionName).resolve(removed.fileName)
         try {
-          oldPaperclipFile.delete()
+          oldPaperclipFile.deleteIfExists()
         } catch (ex: IOException) {
-          LOGGER.warn("Failed to delete Paperclip at {}", oldPaperclipFile.path, ex)
+          LOGGER.warn("Failed to delete Paperclip at {}", oldPaperclipFile.absolutePathString(), ex)
         }
         this.writeVersions()
       }
     }
   }
 
-  private fun paperclipsFor(minecraftVersion: String): Provider<Directory> =
-    this.paperclips().map { it.dir(minecraftVersion) }
+  private fun paperclipsFor(minecraftVersion: String): Path =
+    this.paperclips().resolve(minecraftVersion)
 
-  private fun paperclips(): Provider<Directory> =
-    this.parameters.cacheDirectory.dir("paperclips")
+  private fun paperclips(): Path =
+    this.parameters.cacheDirectory.path.resolve("paperclips")
 
   fun resolvePaperclip(
     project: Project,
     minecraftVersion: String,
     paperBuild: RunServerTask.PaperBuild
-  ): File {
+  ): Path {
     this.versions = this.loadOrCreateVersions()
 
     val version = this.versions.versions.computeIfAbsent(minecraftVersion) { Version(it) }
@@ -126,8 +133,8 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       LOGGER.lifecycle("Located Paper {} build {} in local cache.", minecraftVersion, build)
 
       // Verify hash is still correct
-      val localPaperclip = this.paperclipsFor(minecraftVersion).get().file(possible.fileName).asFile
-      val localBuildHash = FileHashing.sha256(localPaperclip)
+      val localPaperclip = this.paperclipsFor(minecraftVersion).resolve(possible.fileName)
+      val localBuildHash = localPaperclip.sha256()
       if (localBuildHash == possible.sha256) {
         if (paperBuild is RunServerTask.PaperBuild.Specific) {
           version.knownJars[build] = possible.copy(keep = true)
@@ -138,7 +145,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       }
       version.knownJars.remove(build)
       this.writeVersions()
-      localPaperclip.delete()
+      localPaperclip.deleteIfExists()
       LOGGER.lifecycle("Invalid SHA256 hash for locally cached Paper {} build {}, invalidating and attempting to re-download.", minecraftVersion, build)
       this.logExpectedActual(possible.sha256, localBuildHash)
     }
@@ -153,7 +160,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     val downloadLink = this.api.downloadURL(Projects.PAPER, minecraftVersion, build, download)
     val downloadURL = URL(downloadLink)
 
-    val tempFile = Files.createTempDirectory("runpaper")
+    val tempFile = createTempDirectory("runpaper")
       .resolve("paperclip-$minecraftVersion-$build-${System.currentTimeMillis()}.jar.tmp")
 
     val start = System.currentTimeMillis()
@@ -166,21 +173,21 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     }
 
     // Verify SHA256 hash of downloaded jar
-    val downloadedFileHash = FileHashing.sha256(tempFile.toFile())
+    val downloadedFileHash = tempFile.sha256()
     if (downloadedFileHash != download.sha256) {
-      Files.delete(tempFile)
+      tempFile.deleteIfExists()
       LOGGER.lifecycle("Invalid SHA256 hash for downloaded file: '{}', deleting.", download.name)
       this.logExpectedActual(download.sha256, downloadedFileHash)
       error("Failed to verify SHA256 hash of downloaded file.")
     }
     LOGGER.lifecycle("Verified SHA256 hash of downloaded jar.")
 
-    val paperclipsDir = this.paperclipsFor(minecraftVersion).get()
-    paperclipsDir.asFile.mkdirs()
+    val paperclipsDir = this.paperclipsFor(minecraftVersion)
+    paperclipsDir.createDirectories()
     val fileName = "paperclip-$minecraftVersion-$build.jar"
-    val destination = paperclipsDir.file(fileName).asFile
+    val destination = paperclipsDir.resolve(fileName)
 
-    Files.move(tempFile, destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    tempFile.moveTo(destination, StandardCopyOption.REPLACE_EXISTING)
 
     version.knownJars[build] = PaperclipJar(
       build,
@@ -281,17 +288,17 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   }
 
   private fun loadOrCreateVersions(): Versions {
-    val versions = this.versionsFile.get().asFile
-    return if (!versions.exists()) {
+    val versions = this.versionsFile.path
+    return if (!versions.isRegularFile()) {
       Versions()
     } else {
-      this.mapper.readValue(versions)
+      versions.bufferedReader().use { input -> this.mapper.readValue(input) }
     }
   }
 
   private fun writeVersions() {
-    this.parameters.cacheDirectory.get().asFile.mkdirs()
-    this.mapper.writeValue(this.versionsFile.get().asFile, this.versions)
+    this.parameters.cacheDirectory.path.createDirectories()
+    this.versionsFile.path.bufferedWriter().use { writer -> this.mapper.writeValue(writer, this.versions) }
   }
 
   private fun unknownMinecraftVersion(minecraftVersion: String): Nothing =

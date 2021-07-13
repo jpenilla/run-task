@@ -21,7 +21,7 @@ import org.gradle.api.provider.Property
 import org.gradle.kotlin.dsl.property
 import xyz.jpenilla.runpaper.task.RunServerTask
 
-public open class RunPaperExtension(private val project: Project) {
+public abstract class RunPaperExtension(private val project: Project) {
   internal val detectPluginJar: Property<Boolean> = this.project.objects.property<Boolean>().convention(true)
 
   /**
