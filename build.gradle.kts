@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
   `kotlin-dsl`
   id("com.gradle.plugin-publish")
@@ -24,9 +26,12 @@ kotlin {
 }
 
 tasks {
-  compileKotlin {
-    kotlinOptions.apiVersion = "1.4"
-    kotlinOptions.jvmTarget = "1.8"
+  withType<KotlinCompile> {
+    kotlinOptions {
+      apiVersion = "1.4"
+      jvmTarget = "1.8"
+      freeCompilerArgs = listOf("-Xopt-in=kotlin.io.path.ExperimentalPathApi")
+    }
   }
 }
 

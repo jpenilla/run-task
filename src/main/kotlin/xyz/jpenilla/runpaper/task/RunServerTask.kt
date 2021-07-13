@@ -22,7 +22,6 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import org.gradle.api.services.BuildServiceRegistration
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
@@ -31,11 +30,18 @@ import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.getByName
-import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.property
 import xyz.jpenilla.runpaper.Constants
-import xyz.jpenilla.runpaper.service.PaperclipService
+import xyz.jpenilla.runpaper.util.paperclipService
+import xyz.jpenilla.runpaper.util.path
 import java.io.File
+import kotlin.io.path.copyTo
+import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.isDirectory
+import kotlin.io.path.isRegularFile
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.name
 
 /**
  * Task to download and run a Paper server along with plugins.
@@ -43,8 +49,6 @@ import java.io.File
 @Suppress("unused")
 public abstract class RunServerTask : JavaExec() {
   private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.Latest)
-  private val paperclipService: Provider<PaperclipService> = this.project.gradle.sharedServices.registrations
-    .named<BuildServiceRegistration<PaperclipService, PaperclipService.Parameters>>(Constants.Services.PAPERCLIP).flatMap { it.service }
 
   /**
    * The Minecraft version for this [RunServerTask]. This version will be used
@@ -116,9 +120,9 @@ public abstract class RunServerTask : JavaExec() {
     this.workingDir(this.runDirectory)
 
     val paperclip = if (this.serverJar.isPresent) {
-      this.serverJar.get().asFile
+      this.serverJar.path
     } else {
-      this.paperclipService.get().resolvePaperclip(
+      this.project.paperclipService.get().resolvePaperclip(
         this.project,
         this.minecraftVersion.get(),
         this.paperBuild.get()
@@ -139,30 +143,29 @@ public abstract class RunServerTask : JavaExec() {
 
   private fun beforeExec() {
     // Create working dir if needed
-    val workingDir = this.runDirectory.get().asFile
-    if (!workingDir.exists()) {
-      workingDir.mkdirs()
+    val workingDir = this.runDirectory.path
+    if (!workingDir.isDirectory()) {
+      workingDir.createDirectories()
     }
 
     val plugins = workingDir.resolve("plugins")
-    if (!plugins.exists()) {
-      plugins.mkdirs()
+    if (!plugins.isDirectory()) {
+      plugins.createDirectories()
     }
 
     val prefix = "_run-paper_plugin_"
     val extension = ".jar"
 
     // Delete any jars left over from previous legacy mode runs
-    plugins.listFiles()
-      ?.filter { it.isFile }
-      ?.filter { it.name.startsWith(prefix) && it.name.endsWith(extension) }
-      ?.forEach { it.delete() }
+    plugins.listDirectoryEntries()
+      .filter { it.isRegularFile() && it.name.startsWith(prefix) && it.name.endsWith(extension) }
+      .forEach { it.deleteIfExists() }
 
     // Add plugins
     if (this.addPluginArgumentSupported()) {
       this.args(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
     } else {
-      this.pluginJars.files.forEachIndexed { i, jar ->
+      this.pluginJars.files.map { it.toPath() }.forEachIndexed { i, jar ->
         jar.copyTo(plugins.resolve(prefix + i + extension))
       }
     }
@@ -215,8 +218,8 @@ public abstract class RunServerTask : JavaExec() {
   }
 
   /**
-   * Sets a specific build number of Paper to use. By default the latest
-   * build for the configured Minecraft version is used.
+   * Sets a specific build number of Paper to use. [PaperBuild.Latest] is
+   * used, which uses the latest build for the configured Minecraft version.
    *
    * @param paperBuildNumber build number
    */
