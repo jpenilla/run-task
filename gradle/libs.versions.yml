@@ -11,6 +11,7 @@ plugins:
 
 versions:
   jackson: 2.12.3
+  paperweight: 1.1.10
 
 dependencies:
   jacksonModuleKotlin:
@@ -20,7 +21,7 @@ dependencies:
   paperweightUserdev:
     group: io.papermc.paperweight.userdev
     name: io.papermc.paperweight.userdev.gradle.plugin
-    version: 1.1.9-LOCAL-SNAPSHOT # todo
+    version: { ref: paperweight }
 
 bundles:
   jackson:
