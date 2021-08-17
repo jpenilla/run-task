@@ -28,10 +28,7 @@ import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.property
-import xyz.jpenilla.runpaper.Constants
 import xyz.jpenilla.runpaper.util.paperclipService
 import xyz.jpenilla.runpaper.util.path
 import java.io.File
@@ -318,12 +315,5 @@ public abstract class RunServerTask : JavaExec() {
     public object Latest : PaperBuild()
 
     public data class Specific internal constructor(internal val buildNumber: Int) : PaperBuild()
-  }
-
-  internal fun resolvePluginJarTask(): AbstractArchiveTask? {
-    if (this.project.plugins.hasPlugin(Constants.Plugins.SHADOW_PLUGIN_ID)) {
-      return this.project.tasks.getByName<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME)
-    }
-    return this.project.tasks.findByName("jar") as? AbstractArchiveTask
   }
 }

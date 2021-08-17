@@ -15,10 +15,12 @@ description = "Gradle plugin adding a task to run a Paper Minecraft server"
 repositories {
   mavenCentral()
   gradlePluginPortal()
+  maven("https://papermc.io/repo/repository/maven-public/")
 }
 
 dependencies {
   implementation(libs.bundles.jackson)
+  compileOnly(libs.paperweightUserdev)
 }
 
 kotlin {

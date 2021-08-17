@@ -11,12 +11,17 @@ plugins:
 
 versions:
   jackson: 2.12.3
+  paperweight: 1.1.10
 
 dependencies:
   jacksonModuleKotlin:
     group: com.fasterxml.jackson.module
     name: jackson-module-kotlin
     version: { ref: jackson }
+  paperweightUserdev:
+    group: io.papermc.paperweight.userdev
+    name: io.papermc.paperweight.userdev.gradle.plugin
+    version: { ref: paperweight }
 
 bundles:
   jackson:
