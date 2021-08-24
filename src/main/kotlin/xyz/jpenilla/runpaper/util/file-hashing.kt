@@ -28,14 +28,14 @@ private enum class HashingAlgorithm(val algorithmName: String) {
   SHA256("SHA-256");
 
   fun digest(): MessageDigest = try {
-    MessageDigest.getInstance(this.algorithmName)
+    MessageDigest.getInstance(algorithmName)
   } catch (ex: NoSuchAlgorithmException) {
-    throw RuntimeException("Could not get MessageDigest instance for '${this.algorithmName}' algorithm.", ex)
+    throw RuntimeException("Could not get MessageDigest instance for '$algorithmName' algorithm.", ex)
   }
 }
 
 internal fun Path.sha256(): String =
-  toHexString(this.calculateHash(HashingAlgorithm.SHA256))
+  toHexString(calculateHash(HashingAlgorithm.SHA256))
 
 private fun Path.calculateHash(algorithm: HashingAlgorithm): ByteArray =
   Files.newInputStream(this).calculateHash(algorithm)

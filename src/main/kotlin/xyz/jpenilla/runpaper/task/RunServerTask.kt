@@ -45,7 +45,7 @@ import kotlin.io.path.name
  */
 @Suppress("unused")
 public abstract class RunServerTask : JavaExec() {
-  private val paperBuild: Property<PaperBuild> = this.project.objects.property<PaperBuild>().convention(PaperBuild.Latest)
+  private val paperBuild: Property<PaperBuild> = project.objects.property<PaperBuild>().convention(PaperBuild.Latest)
 
   /**
    * The Minecraft version for this [RunServerTask]. This version will be used
@@ -86,7 +86,7 @@ public abstract class RunServerTask : JavaExec() {
    * Defaults to `run` in the project directory.
    */
   @Internal
-  public val runDirectory: DirectoryProperty = this.project.objects.directoryProperty().convention(this.project.layout.projectDirectory.dir("run"))
+  public val runDirectory: DirectoryProperty = project.objects.directoryProperty().convention(project.layout.projectDirectory.dir("run"))
 
   /**
    * The collection of plugin jars to load. Run Paper will attempt to locate
@@ -101,46 +101,46 @@ public abstract class RunServerTask : JavaExec() {
   public abstract val pluginJars: ConfigurableFileCollection
 
   override fun exec() {
-    this.configure()
-    this.beforeExec()
-    this.logger.lifecycle("Starting Paper...")
-    this.logger.lifecycle("")
+    configure()
+    beforeExec()
+    logger.lifecycle("Starting Paper...")
+    logger.lifecycle("")
     super.exec()
   }
 
   private fun configure() {
-    if (!this.minecraftVersion.isPresent) {
-      error("No Minecraft version was specified for the '${this.name}' task!")
+    if (!minecraftVersion.isPresent) {
+      error("No Minecraft version was specified for the '$name' task!")
     }
 
-    this.standardInput = System.`in`
-    this.workingDir(this.runDirectory)
+    standardInput = System.`in`
+    workingDir(runDirectory)
 
-    val paperclip = if (this.serverJar.isPresent) {
-      this.serverJar.path
+    val paperclip = if (serverJar.isPresent) {
+      serverJar.path
     } else {
-      this.project.paperclipService.get().resolvePaperclip(
-        this.project,
-        this.minecraftVersion.get(),
-        this.paperBuild.get()
+      project.paperclipService.get().resolvePaperclip(
+        project,
+        minecraftVersion.get(),
+        paperBuild.get()
       )
     }
-    this.classpath(paperclip)
+    classpath(paperclip)
 
     // Set disable watchdog property for debugging
-    this.systemProperty("disable.watchdog", true)
+    systemProperty("disable.watchdog", true)
 
-    this.systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", true)
+    systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", true)
 
     // Add our arguments
-    if (this.minecraftVersionIsSameOrNewerThan(1, 15)) {
-      this.args("--nogui")
+    if (minecraftVersionIsSameOrNewerThan(1, 15)) {
+      args("--nogui")
     }
   }
 
   private fun beforeExec() {
     // Create working dir if needed
-    val workingDir = this.runDirectory.path
+    val workingDir = runDirectory.path
     if (!workingDir.isDirectory()) {
       workingDir.createDirectories()
     }
@@ -159,25 +159,25 @@ public abstract class RunServerTask : JavaExec() {
       .forEach { it.deleteIfExists() }
 
     // Add plugins
-    if (this.addPluginArgumentSupported()) {
-      this.args(this.pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
+    if (addPluginArgumentSupported()) {
+      args(pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
     } else {
-      this.pluginJars.files.map { it.toPath() }.forEachIndexed { i, jar ->
+      pluginJars.files.map { it.toPath() }.forEachIndexed { i, jar ->
         jar.copyTo(plugins.resolve(prefix + i + extension))
       }
     }
   }
 
   private fun addPluginArgumentSupported(): Boolean {
-    if (this.legacyPluginLoading.isPresent) {
-      return !this.legacyPluginLoading.get()
+    if (legacyPluginLoading.isPresent) {
+      return !legacyPluginLoading.get()
     }
 
-    return this.minecraftVersionIsSameOrNewerThan(1, 16, 5)
+    return minecraftVersionIsSameOrNewerThan(1, 16, 5)
   }
 
   private fun minecraftVersionIsSameOrNewerThan(vararg other: Int): Boolean {
-    val minecraft = this.minecraftVersion.get().split(".").map {
+    val minecraft = minecraftVersion.get().split(".").map {
       try {
         it.toInt()
       } catch (ex: NumberFormatException) {
@@ -198,20 +198,20 @@ public abstract class RunServerTask : JavaExec() {
   /**
    * Sets the Minecraft version to use.
    *
-   * @param minecraftVersion minecraft version
+   * @param version minecraft version
    */
-  public fun minecraftVersion(minecraftVersion: String) {
-    this.minecraftVersion.set(minecraftVersion)
+  public fun minecraftVersion(version: String) {
+    minecraftVersion.set(version)
   }
 
   /**
    * Sets the build of Paper to use. By default, [PaperBuild.Latest] is
    * used, which uses the latest build for the configured Minecraft version.
    *
-   * @param paperBuild paper build
+   * @param build paper build
    */
-  public fun paperBuild(paperBuild: PaperBuild) {
-    this.paperBuild.set(paperBuild)
+  public fun paperBuild(build: PaperBuild) {
+    paperBuild.set(build)
   }
 
   /**
@@ -221,17 +221,17 @@ public abstract class RunServerTask : JavaExec() {
    * @param paperBuildNumber build number
    */
   public fun paperBuild(paperBuildNumber: Int) {
-    this.paperBuild.set(PaperBuild.Specific(paperBuildNumber))
+    paperBuild.set(PaperBuild.Specific(paperBuildNumber))
   }
 
   /**
    * Sets the run directory for the test server.
    * Defaults to `run` in the project directory.
    *
-   * @param runDirectory run directory
+   * @param directory run directory
    */
-  public fun runDirectory(runDirectory: File) {
-    this.runDirectory.set(runDirectory)
+  public fun runDirectory(directory: File) {
+    runDirectory.set(directory)
   }
 
   /**
@@ -241,7 +241,7 @@ public abstract class RunServerTask : JavaExec() {
    */
   @Deprecated("Replaced by serverJar.", replaceWith = ReplaceWith("serverJar(file)"))
   public fun paperclip(file: File) {
-    this.serverJar.set(file)
+    serverJar.set(file)
   }
 
   /**
@@ -251,7 +251,7 @@ public abstract class RunServerTask : JavaExec() {
    */
   @Deprecated("Replaced by serverJar.", replaceWith = ReplaceWith("serverJar(file)"))
   public fun paperclip(file: Provider<RegularFile>) {
-    this.serverJar.set(file)
+    serverJar.set(file)
   }
 
   /**
@@ -260,7 +260,7 @@ public abstract class RunServerTask : JavaExec() {
    * @param file server jar file
    */
   public fun serverJar(file: File) {
-    this.serverJar.set(file)
+    serverJar.set(file)
   }
 
   /**
@@ -269,7 +269,7 @@ public abstract class RunServerTask : JavaExec() {
    * @param file server jar file provider
    */
   public fun serverJar(file: Provider<RegularFile>) {
-    this.serverJar.set(file)
+    serverJar.set(file)
   }
 
   /**
@@ -278,7 +278,7 @@ public abstract class RunServerTask : JavaExec() {
    * @param jars jars to add
    */
   public fun pluginJars(vararg jars: File) {
-    this.pluginJars.from(jars)
+    pluginJars.from(jars)
   }
 
   /**
@@ -287,14 +287,14 @@ public abstract class RunServerTask : JavaExec() {
    * @param jars jars to add
    */
   public fun pluginJars(vararg jars: Provider<RegularFile>) {
-    this.pluginJars.from(jars)
+    pluginJars.from(jars)
   }
 
   /**
    * Convenience method setting [legacyPluginLoading] to `true`.
    */
   public fun legacyPluginLoading() {
-    this.legacyPluginLoading.set(true)
+    legacyPluginLoading.set(true)
   }
 
   /**

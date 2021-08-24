@@ -34,35 +34,37 @@ import org.gradle.kotlin.dsl.registerIfAbsent
 import org.gradle.kotlin.dsl.the
 import xyz.jpenilla.runpaper.service.PaperclipService
 import xyz.jpenilla.runpaper.task.RunServerTask
-import java.io.File
+import xyz.jpenilla.runpaper.util.find
+import xyz.jpenilla.runpaper.util.set
+import xyz.jpenilla.runpaper.util.sharedCaches
 
 public class RunPaper : Plugin<Project> {
   override fun apply(target: Project) {
     val runPaperExtension = target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
 
     target.gradle.sharedServices.registerIfAbsent(Constants.Services.PAPERCLIP, PaperclipService::class) {
-      this.maxParallelUsages.set(1)
-      this.parameters.cacheDirectory.set(target.sharedCaches)
-      this.parameters.refreshDependencies.set(target.gradle.startParameter.isRefreshDependencies)
-      this.parameters.offlineMode.set(target.gradle.startParameter.isOffline)
+      maxParallelUsages.set(1)
+      parameters.cacheDirectory.set(target.sharedCaches.resolve(Constants.RUN_PAPER_PATH))
+      parameters.refreshDependencies.set(target.gradle.startParameter.isRefreshDependencies)
+      parameters.offlineMode.set(target.gradle.startParameter.isOffline)
     }
 
     target.tasks.register<Delete>(Constants.Tasks.CLEAN_PAPERCLIP_CACHE) {
-      this.group = Constants.TASK_GROUP
-      this.description = "Delete all locally cached Paperclips."
-      this.delete(target.sharedCaches)
+      group = Constants.TASK_GROUP
+      description = "Delete all locally cached Paperclips."
+      delete(target.sharedCaches.resolve(Constants.RUN_PAPER_PATH))
     }
 
     val runServer = target.tasks.register<RunServerTask>(Constants.Tasks.RUN_SERVER) {
-      this.group = Constants.TASK_GROUP
-      this.description = "Run a Paper server for plugin testing."
+      group = Constants.TASK_GROUP
+      description = "Run a Paper server for plugin testing."
     }
     target.afterEvaluate {
       if (!runPaperExtension.detectPluginJar.get()) return@afterEvaluate
 
       runServer {
         target.findPluginJar()?.let { pluginJar ->
-          this.pluginJars(pluginJar)
+          pluginJars(pluginJar)
         }
       }
     }
@@ -72,21 +74,15 @@ public class RunPaper : Plugin<Project> {
     }
   }
 
-  private val Project.sharedCaches: File
-    get() = this.gradle.gradleUserHomeDir.resolve("${Constants.GRADLE_CACHES_DIRECTORY_NAME}/${Constants.RUN_PAPER}/v1")
-
-  private fun Project.findPluginJar(): Provider<RegularFile>? {
-    when {
-      this.plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) -> {
-        return this.tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.outputJar }
-      }
-      this.plugins.hasPlugin(Constants.Plugins.SHADOW_PLUGIN_ID) -> {
-        return this.tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
-      }
-      else -> {
-        val jar = this.tasks.findByName(JavaPlugin.JAR_TASK_NAME) as? AbstractArchiveTask ?: return null
-        return jar.archiveFile
-      }
+  private fun Project.findPluginJar(): Provider<RegularFile>? = when {
+    plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) -> {
+      tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.outputJar }
+    }
+    plugins.hasPlugin(Constants.Plugins.SHADOW_PLUGIN_ID) -> {
+      tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
+    }
+    else -> {
+      tasks.find<AbstractArchiveTask>(JavaPlugin.JAR_TASK_NAME)?.archiveFile
     }
   }
 
@@ -94,19 +90,19 @@ public class RunPaper : Plugin<Project> {
     runServer: TaskProvider<RunServerTask>,
     runPaperExtension: RunPaperExtension
   ) {
-    val paperweight = this.the<PaperweightUserExtension>()
+    val paperweight = the<PaperweightUserExtension>()
 
     runServer {
-      this.minecraftVersion.convention(paperweight.minecraftVersion)
+      minecraftVersion.convention(paperweight.minecraftVersion)
     }
 
-    this.tasks.register<RunServerTask>(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
-      this.group = Constants.TASK_GROUP
-      this.description = "Run a Mojang mapped Paper server for plugin testing, by integrating with paperweight."
-      this.serverJar.value(paperweight.mojangMappedServerJar).finalizeValue()
-      this.minecraftVersion.value(paperweight.minecraftVersion).finalizeValue()
+    tasks.register<RunServerTask>(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
+      group = Constants.TASK_GROUP
+      description = "Run a Mojang mapped Paper server for plugin testing, by integrating with paperweight."
+      serverJar.value(paperweight.mojangMappedServerJar).disallowChanges()
+      minecraftVersion.value(paperweight.minecraftVersion).disallowChanges()
       if (runPaperExtension.detectPluginJar.get()) {
-        this.pluginJars(this@setupPaperweightCompat.tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
+        pluginJars(tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
       }
     }
   }

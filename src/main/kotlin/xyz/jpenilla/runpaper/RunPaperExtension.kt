@@ -21,8 +21,8 @@ import org.gradle.api.provider.Property
 import org.gradle.kotlin.dsl.property
 import xyz.jpenilla.runpaper.task.RunServerTask
 
-public abstract class RunPaperExtension(private val project: Project) {
-  internal val detectPluginJar: Property<Boolean> = this.project.objects.property<Boolean>().convention(true)
+public abstract class RunPaperExtension(project: Project) {
+  internal val detectPluginJar: Property<Boolean> = project.objects.property<Boolean>().convention(true)
 
   /**
    * By default, Run Paper will attempt to discover your plugin `jar` or `shadowJar` and automatically add it to
@@ -33,6 +33,6 @@ public abstract class RunPaperExtension(private val project: Project) {
    * Run Paper, if you create your own [RunServerTask]s you will need to manually add plugin jars regardless.
    */
   public fun disablePluginJarDetection() {
-    this.detectPluginJar.set(false)
+    detectPluginJar.set(false)
   }
 }

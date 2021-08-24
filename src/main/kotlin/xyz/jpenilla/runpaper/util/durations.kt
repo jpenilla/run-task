@@ -66,21 +66,22 @@ internal class InvalidDurationException private constructor(
   cause: Throwable? = null
 ) : IllegalArgumentException(message, cause) {
   internal companion object {
-    private val infoMessage = """Accepted format is a number followed by a unit abbreviation.
-        |Possible units: $UNITS
-        |Example input strings: ["1d", "12h", "1m", "30s"]
-      """.trimMargin()
+    private val infoMessage = """
+      Accepted format is a number followed by a unit abbreviation.
+      Possible units: $UNITS
+      Example input strings: ["1d", "12h", "1m", "30s"]
+    """.trimIndent()
 
     fun noInput(): InvalidDurationException =
-      InvalidDurationException("Cannot parse a Duration from an empty input string.\n${this.infoMessage}")
+      InvalidDurationException("Cannot parse a Duration from an empty input string.\n$infoMessage")
 
     fun invalidInput(input: String, cause: Throwable? = null) =
-      InvalidDurationException("Cannot parse a Duration from input '$input'.\n${this.infoMessage}", cause)
+      InvalidDurationException("Cannot parse a Duration from input '$input'.\n$infoMessage", cause)
   }
 }
 
 internal fun Duration.prettyPrint(): String =
-  this.toString()
+  toString()
     .substring(2)
     .replace("(\\d[HMS])(?!$)".toRegex(), "$1 ")
     .toLowerCase(Locale.ENGLISH)

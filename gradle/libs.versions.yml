@@ -8,10 +8,11 @@ plugins:
   net.kyori.indra.license-header: *indra
   net.kyori.indra.publishing.gradle-plugin: *indra
   com.gradle.plugin-publish: 0.15.0
+  org.jlleitschuh.gradle.ktlint: 10.0.0
 
 versions:
   jackson: 2.12.3
-  paperweight: 1.1.10
+  paperweight: 1.1.11
 
 dependencies:
   jacksonModuleKotlin:

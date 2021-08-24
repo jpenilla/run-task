@@ -20,6 +20,7 @@ internal object Constants {
   const val RUN_PAPER = "RunPaper"
   const val TASK_GROUP = "Run Paper"
   const val GRADLE_CACHES_DIRECTORY_NAME = "caches"
+  const val RUN_PAPER_PATH = "$RUN_PAPER/v1"
 
   object Plugins {
     const val SHADOW_PLUGIN_ID = "com.github.johnrengelman.shadow"
@@ -42,7 +43,7 @@ internal object Constants {
   object Properties {
     private fun runPaper(propertyName: String) = "xyz.jpenilla.run-paper.$propertyName"
 
-    val UPDATE_CHECK_FREQUENCY = this.runPaper("updateCheckFrequency")
+    val UPDATE_CHECK_FREQUENCY = runPaper("updateCheckFrequency")
   }
 
   object Extensions {

@@ -42,15 +42,15 @@ internal object ProgressLoggerUtil {
     private val completed: Method
   ) {
     fun start(description: String, status: String) {
-      this.start(this.logger, description, status)
+      start(logger, description, status)
     }
 
     fun progress(status: String) {
-      this.progress(this.logger, status)
+      progress(logger, status)
     }
 
     fun completed() {
-      this.completed(this.logger)
+      completed(logger)
     }
   }
 }

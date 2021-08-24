@@ -16,16 +16,24 @@
  */
 package xyz.jpenilla.runpaper.util
 
+import org.gradle.api.Project
 import org.gradle.api.file.FileSystemLocation
 import org.gradle.api.file.FileSystemLocationProperty
 import org.gradle.api.provider.Provider
+import xyz.jpenilla.runpaper.Constants
 import java.nio.file.Path
 
 internal val FileSystemLocationProperty<*>.path: Path
-  get() = this.get().path
+  get() = get().path
+
+internal fun FileSystemLocationProperty<*>.set(path: Path): Unit =
+  set(path.toFile())
 
 internal val Provider<out FileSystemLocation>.path: Path
-  get() = this.get().path
+  get() = get().path
 
 internal val FileSystemLocation.path: Path
-  get() = this.asFile.toPath()
+  get() = asFile.toPath()
+
+internal val Project.sharedCaches: Path
+  get() = gradle.gradleUserHomeDir.toPath().resolve(Constants.GRADLE_CACHES_DIRECTORY_NAME)

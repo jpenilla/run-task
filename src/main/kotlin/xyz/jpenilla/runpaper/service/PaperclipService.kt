@@ -23,11 +23,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFile
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 import xyz.jpenilla.runpaper.Constants
@@ -72,12 +70,12 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     .enable(SerializationFeature.INDENT_OUTPUT)
     .addModule(kotlinModule())
     .build()
-  private val versionsFile: Provider<RegularFile> = this.parameters.cacheDirectory.file("versions.json")
+  private val versionsFile: Path = parameters.cacheDirectory.file("versions.json").path
 
-  private var versions = this.loadOrCreateVersions()
+  private var versions = loadOrCreateVersions()
 
   init {
-    this.cleanLocalCache()
+    cleanLocalCache()
   }
 
   /**
@@ -90,7 +88,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     // how many Paperclips to cache for each Minecraft version
     val perVersionCacheSize = 5
 
-    for ((versionName, version) in this.versions.versions) {
+    for ((versionName, version) in versions.versions) {
       val jars = version.knownJars.filterNot { it.value.keep }.toMutableMap()
       if (jars.isEmpty()) {
         continue
@@ -100,64 +98,64 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
         val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
         version.knownJars.remove(oldestBuild)
 
-        val oldPaperclipFile = this.paperclipsFor(versionName).resolve(removed.fileName)
+        val oldPaperclipFile = paperclipsFor(versionName).resolve(removed.fileName)
         try {
           oldPaperclipFile.deleteIfExists()
         } catch (ex: IOException) {
           LOGGER.warn("Failed to delete Paperclip at {}", oldPaperclipFile.absolutePathString(), ex)
         }
-        this.writeVersions()
+        writeVersions()
       }
     }
   }
 
   private fun paperclipsFor(minecraftVersion: String): Path =
-    this.paperclips().resolve(minecraftVersion)
+    paperclips.resolve(minecraftVersion)
 
-  private fun paperclips(): Path =
-    this.parameters.cacheDirectory.path.resolve("paperclips")
+  private val paperclips: Path
+    get() = parameters.cacheDirectory.path.resolve("paperclips")
 
   fun resolvePaperclip(
     project: Project,
     minecraftVersion: String,
     paperBuild: RunServerTask.PaperBuild
   ): Path {
-    this.versions = this.loadOrCreateVersions()
+    versions = loadOrCreateVersions()
 
-    val version = this.versions.versions.computeIfAbsent(minecraftVersion) { Version(it) }
-    val build = this.resolveBuildNumber(project, version, paperBuild)
+    val version = versions.versions.computeIfAbsent(minecraftVersion) { Version(it) }
+    val build = resolveBuildNumber(project, version, paperBuild)
 
     val possible = version.knownJars[build]
-    if (possible != null && !this.parameters.refreshDependencies.get()) {
+    if (possible != null && !parameters.refreshDependencies.get()) {
       // We already have this Paperclip!
       LOGGER.lifecycle("Located Paper {} build {} in local cache.", minecraftVersion, build)
 
       // Verify hash is still correct
-      val localPaperclip = this.paperclipsFor(minecraftVersion).resolve(possible.fileName)
+      val localPaperclip = paperclipsFor(minecraftVersion).resolve(possible.fileName)
       val localBuildHash = localPaperclip.sha256()
       if (localBuildHash == possible.sha256) {
         if (paperBuild is RunServerTask.PaperBuild.Specific) {
           version.knownJars[build] = possible.copy(keep = true)
-          this.writeVersions()
+          writeVersions()
         }
         // Hash is good, return
         return localPaperclip
       }
       version.knownJars.remove(build)
-      this.writeVersions()
+      writeVersions()
       localPaperclip.deleteIfExists()
       LOGGER.lifecycle("Invalid SHA256 hash for locally cached Paper {} build {}, invalidating and attempting to re-download.", minecraftVersion, build)
-      this.logExpectedActual(possible.sha256, localBuildHash)
+      logExpectedActual(possible.sha256, localBuildHash)
     }
 
     // Need to fetch new Paperclip!
-    if (this.parameters.offlineMode.get()) {
+    if (parameters.offlineMode.get()) {
       error("Offline mode is enabled and Run Paper could not locate a locally cached build.")
     }
     LOGGER.lifecycle("Downloading Paper {} build {}...", minecraftVersion, build)
-    val buildResponse = this.api.build(Projects.PAPER, minecraftVersion, build)
+    val buildResponse = api.build(Projects.PAPER, minecraftVersion, build)
     val download = buildResponse.downloads["application"] ?: error("Could not find download.")
-    val downloadLink = this.api.downloadURL(Projects.PAPER, minecraftVersion, build, download)
+    val downloadLink = api.downloadURL(Projects.PAPER, minecraftVersion, build, download)
     val downloadURL = URL(downloadLink)
 
     val tempFile = createTempDirectory("runpaper")
@@ -165,7 +163,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
 
     val start = System.currentTimeMillis()
     val downloadResult = Downloader(downloadURL, tempFile)
-      .download(this.createDownloadListener(project))
+      .download(createDownloadListener(project))
 
     when (downloadResult) {
       is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading Paper, took {}.", Duration.ofMillis(System.currentTimeMillis() - start).prettyPrint())
@@ -177,12 +175,12 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
     if (downloadedFileHash != download.sha256) {
       tempFile.deleteIfExists()
       LOGGER.lifecycle("Invalid SHA256 hash for downloaded file: '{}', deleting.", download.name)
-      this.logExpectedActual(download.sha256, downloadedFileHash)
+      logExpectedActual(download.sha256, downloadedFileHash)
       error("Failed to verify SHA256 hash of downloaded file.")
     }
     LOGGER.lifecycle("Verified SHA256 hash of downloaded jar.")
 
-    val paperclipsDir = this.paperclipsFor(minecraftVersion)
+    val paperclipsDir = paperclipsFor(minecraftVersion)
     paperclipsDir.createDirectories()
     val fileName = "paperclip-$minecraftVersion-$build.jar"
     val destination = paperclipsDir.resolve(fileName)
@@ -196,7 +194,7 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       // If the build was specifically requested, (as opposed to resolved as latest) mark the jar for keeping
       paperBuild is RunServerTask.PaperBuild.Specific
     )
-    this.writeVersions()
+    writeVersions()
 
     return destination
   }
@@ -210,37 +208,37 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
       return paperBuild.buildNumber
     }
 
-    if (this.parameters.offlineMode.get()) {
+    if (parameters.offlineMode.get()) {
       LOGGER.lifecycle("Offline mode enabled, attempting to use latest local build of Paper for Minecraft {}.", minecraftVersion)
-      return this.resolveLatestLocalBuild(minecraftVersion)
+      return resolveLatestLocalBuild(minecraftVersion)
     }
 
-    if (!this.parameters.refreshDependencies.get()) {
-      val checkFrequency = this.updateCheckFrequency(project)
+    if (!parameters.refreshDependencies.get()) {
+      val checkFrequency = updateCheckFrequency(project)
       val timeSinceLastCheck = System.currentTimeMillis() - minecraftVersion.lastUpdateCheck
       if (timeSinceLastCheck <= checkFrequency.toMillis()) {
-        return this.resolveLatestLocalBuild(minecraftVersion)
+        return resolveLatestLocalBuild(minecraftVersion)
       }
     }
 
-    return this.resolveLatestRemoteBuild(minecraftVersion)
+    return resolveLatestRemoteBuild(minecraftVersion)
   }
 
   private fun resolveLatestLocalBuild(minecraftVersion: Version): Int {
     return minecraftVersion.knownJars.keys.maxOrNull()
-      ?: this.unknownMinecraftVersion(minecraftVersion.name)
+      ?: unknownMinecraftVersion(minecraftVersion.name)
   }
 
   private fun resolveLatestRemoteBuild(minecraftVersion: Version): Int = try {
     LOGGER.lifecycle("Fetching Paper builds for Minecraft {}...", minecraftVersion.name)
-    this.api.version(Projects.PAPER, minecraftVersion.name).builds.last().apply {
+    api.version(Projects.PAPER, minecraftVersion.name).builds.last().apply {
       LOGGER.lifecycle("Latest build for {} is {}.", minecraftVersion.name, this)
-      this@PaperclipService.versions.versions[minecraftVersion.name] = minecraftVersion.copy(lastUpdateCheck = System.currentTimeMillis())
-      this@PaperclipService.writeVersions()
+      versions.versions[minecraftVersion.name] = minecraftVersion.copy(lastUpdateCheck = System.currentTimeMillis())
+      writeVersions()
     }
   } catch (ex: Exception) {
     LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
-    this.resolveLatestLocalBuild(minecraftVersion)
+    resolveLatestLocalBuild(minecraftVersion)
   }
 
   private fun createDownloadListener(project: Project): Downloader.ProgressListener {
@@ -288,17 +286,16 @@ internal abstract class PaperclipService : BuildService<PaperclipService.Paramet
   }
 
   private fun loadOrCreateVersions(): Versions {
-    val versions = this.versionsFile.path
-    return if (!versions.isRegularFile()) {
+    return if (!versionsFile.isRegularFile()) {
       Versions()
     } else {
-      versions.bufferedReader().use { input -> this.mapper.readValue(input) }
+      versionsFile.bufferedReader().use { reader -> mapper.readValue(reader) }
     }
   }
 
   private fun writeVersions() {
-    this.parameters.cacheDirectory.path.createDirectories()
-    this.versionsFile.path.bufferedWriter().use { writer -> this.mapper.writeValue(writer, this.versions) }
+    versionsFile.parent.createDirectories()
+    versionsFile.bufferedWriter().use { writer -> mapper.writeValue(writer, versions) }
   }
 
   private fun unknownMinecraftVersion(minecraftVersion: String): Nothing =

@@ -6,6 +6,7 @@ plugins {
   id("net.kyori.indra")
   id("net.kyori.indra.license-header")
   id("net.kyori.indra.publishing.gradle-plugin")
+  id("org.jlleitschuh.gradle.ktlint")
 }
 
 group = "xyz.jpenilla"
@@ -34,6 +35,12 @@ tasks {
       jvmTarget = "1.8"
       freeCompilerArgs = listOf("-Xopt-in=kotlin.io.path.ExperimentalPathApi")
     }
+  }
+
+  register("format") {
+    group = "formatting"
+    description = "Formats source code according to project style."
+    dependsOn(licenseFormat, ktlintFormat)
   }
 }
 

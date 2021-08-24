@@ -41,21 +41,21 @@ internal class Downloader(
   private var expectedSize = 0L
 
   fun download(listener: ProgressListener): Result {
-    if (this.started) {
+    if (started) {
       error("Cannot start download a second time.")
     }
-    this.started = true
+    started = true
 
     val downloadFuture = CompletableFuture.runAsync {
-      val connection = this.remote.openConnection()
+      val connection = remote.openConnection()
       val expected = connection.contentLengthLong
       listener.onStart(expected)
-      this.expectedSize = expected
+      expectedSize = expected
       Channels.newChannel(connection.getInputStream()).use { remote ->
         val wrapped = ReadableByteChannelWrapper(remote) { bytesRead ->
-          this.downloaded += bytesRead
+          downloaded += bytesRead
         }
-        FileOutputStream(this.destination.toFile()).use {
+        FileOutputStream(destination.toFile()).use {
           it.channel.transferFrom(wrapped, 0, Long.MAX_VALUE)
         }
       }
@@ -63,8 +63,8 @@ internal class Downloader(
 
     val executor = Executors.newSingleThreadScheduledExecutor()
     val emitProgress = {
-      if (this.expectedSize != 0L) {
-        listener.updateProgress(this.downloaded)
+      if (expectedSize != 0L) {
+        listener.updateProgress(downloaded)
       }
     }
     val task = executor.scheduleAtFixedRate(emitProgress, 0L, listener.updateRateMs, TimeUnit.MILLISECONDS)
@@ -82,7 +82,7 @@ internal class Downloader(
     if (failure == null) {
       emitProgress()
       listener.close()
-      return Result.Success(this.downloaded)
+      return Result.Success(downloaded)
     }
 
     listener.close()
@@ -95,7 +95,7 @@ internal class Downloader(
   }
 
   interface ProgressListener : AutoCloseable {
-    fun onStart(expectedSize: Long)
+    fun onStart(expectedSizeBytes: Long)
     fun updateProgress(bytesDownloaded: Long)
     val updateRateMs: Long
   }
@@ -106,9 +106,9 @@ internal class Downloader(
   ) : ReadableByteChannel by wrapped {
     @Throws(IOException::class)
     override fun read(byteBuffer: ByteBuffer): Int {
-      val read = this.wrapped.read(byteBuffer)
+      val read = wrapped.read(byteBuffer)
       if (read > 0) {
-        this.readCallback(read)
+        readCallback(read)
       }
       return read
     }

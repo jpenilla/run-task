@@ -53,15 +53,15 @@ internal class LoggingDownloadListener<S>(
   }
 
   private fun createMessage(bytesDownloaded: Long): String {
-    val elapsedMs = System.currentTimeMillis() - this.startTime
-    val percentCompleted = bytesDownloaded.toDouble() / this.expectedSize.toDouble()
+    val elapsedMs = System.currentTimeMillis() - startTime
+    val percentCompleted = bytesDownloaded.toDouble() / expectedSize.toDouble()
 
     val message = StringBuilder()
 
-    message.append(this.prefix)
+    message.append(prefix)
       .append(formatSize(bytesDownloaded))
       .append('/')
-      .append(formatSize(this.expectedSize))
+      .append(formatSize(expectedSize))
       .append(" <")
       .append(bar(25, percentCompleted))
       .append("> ")
@@ -69,7 +69,7 @@ internal class LoggingDownloadListener<S>(
 
     // After 10 seconds start showing more detailed info (time elapsed and est. remaining)
     if (elapsedMs > 1000 * 10) {
-      val allTimeForDownloading = elapsedMs * this.expectedSize / bytesDownloaded
+      val allTimeForDownloading = elapsedMs * expectedSize / bytesDownloaded
       val roughEstimateRemainingMs = allTimeForDownloading - elapsedMs
 
       val elapsed = Duration.ofMillis(elapsedMs).prettyPrint()
@@ -82,23 +82,23 @@ internal class LoggingDownloadListener<S>(
     return message.toString()
   }
 
-  override fun onStart(expectedSize: Long) {
-    this.startTime = System.currentTimeMillis()
-    this.expectedSize = expectedSize.run {
+  override fun onStart(expectedSizeBytes: Long) {
+    startTime = System.currentTimeMillis()
+    expectedSize = expectedSizeBytes.run {
       if (this == 0L) {
         // give some invalid progress instead of / by 0
         return@run 1L
       }
       this
     }
-    this.onStart(this.state, this.createMessage(0L))
+    onStart(state, createMessage(0L))
   }
 
   override fun updateProgress(bytesDownloaded: Long) {
-    this.logger(this.state, this.createMessage(bytesDownloaded))
+    logger(state, createMessage(bytesDownloaded))
   }
 
   override fun close() {
-    this.close(this.state)
+    close(state)
   }
 }

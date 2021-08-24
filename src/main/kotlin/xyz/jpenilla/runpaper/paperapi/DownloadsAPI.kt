@@ -45,27 +45,27 @@ internal class DownloadsAPI {
   }
 
   fun projects(): ProjectsResponse {
-    return this.makeQuery("projects")
+    return makeQuery("projects")
   }
 
   fun project(projectName: String): ProjectResponse {
-    return this.makeQuery("projects/$projectName")
+    return makeQuery("projects/$projectName")
   }
 
   fun versionGroup(projectName: String, versionGroup: String): VersionGroupResponse {
-    return this.makeQuery("projects/$projectName/version_group/$versionGroup")
+    return makeQuery("projects/$projectName/version_group/$versionGroup")
   }
 
   fun versionGroupBuilds(projectName: String, versionGroup: String): VersionGroupBuildsResponse {
-    return this.makeQuery("projects/$projectName/version_group/$versionGroup/builds")
+    return makeQuery("projects/$projectName/version_group/$versionGroup/builds")
   }
 
   fun version(projectName: String, version: String): VersionResponse {
-    return this.makeQuery("projects/$projectName/versions/$version")
+    return makeQuery("projects/$projectName/versions/$version")
   }
 
   fun build(projectName: String, version: String, build: Int): BuildResponse {
-    return this.makeQuery("projects/$projectName/versions/$version/builds/$build")
+    return makeQuery("projects/$projectName/versions/$version/builds/$build")
   }
 
   fun downloadURL(projectName: String, version: String, build: Int, download: Download): String {
