@@ -7,12 +7,12 @@ plugins:
   net.kyori.indra: &indra 2.0.6
   net.kyori.indra.license-header: *indra
   net.kyori.indra.publishing.gradle-plugin: *indra
-  com.gradle.plugin-publish: 0.15.0
-  org.jlleitschuh.gradle.ktlint: 10.0.0
+  com.gradle.plugin-publish: 0.16.0
+  org.jlleitschuh.gradle.ktlint: 10.2.0
 
 versions:
-  jackson: 2.12.3
-  paperweight: 1.1.11
+  jackson: 2.13.0
+  paperweight: 1.1.12
 
 dependencies:
   jacksonModuleKotlin:
