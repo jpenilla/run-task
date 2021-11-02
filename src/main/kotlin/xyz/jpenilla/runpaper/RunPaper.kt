@@ -32,9 +32,11 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.registerIfAbsent
 import org.gradle.kotlin.dsl.the
+import org.gradle.kotlin.dsl.withType
 import xyz.jpenilla.runpaper.service.PaperclipService
 import xyz.jpenilla.runpaper.task.RunServerTask
 import xyz.jpenilla.runpaper.util.find
+import xyz.jpenilla.runpaper.util.findJavaLauncher
 import xyz.jpenilla.runpaper.util.set
 import xyz.jpenilla.runpaper.util.sharedCaches
 
@@ -59,18 +61,26 @@ public class RunPaper : Plugin<Project> {
       group = Constants.TASK_GROUP
       description = "Run a Paper server for plugin testing."
     }
-    target.afterEvaluate {
-      if (!runPaperExtension.detectPluginJar.get()) return@afterEvaluate
-
-      runServer {
-        target.findPluginJar()?.let { pluginJar ->
-          pluginJars(pluginJar)
-        }
-      }
-    }
 
     target.plugins.withId(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) {
       target.setupPaperweightCompat(runServer, runPaperExtension)
+    }
+
+    target.afterEvaluate {
+      if (runPaperExtension.detectPluginJar.get()) {
+        runServer {
+          findPluginJar()?.let { pluginJar ->
+            pluginJars(pluginJar)
+          }
+        }
+      }
+
+      tasks.withType<RunServerTask> {
+        // Use the configured Java toolchain if present
+        findJavaLauncher()?.let { launcher ->
+          javaLauncher.convention(launcher)
+        }
+      }
     }
   }
 
@@ -81,9 +91,7 @@ public class RunPaper : Plugin<Project> {
     plugins.hasPlugin(Constants.Plugins.SHADOW_PLUGIN_ID) -> {
       tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
     }
-    else -> {
-      tasks.find<AbstractArchiveTask>(JavaPlugin.JAR_TASK_NAME)?.archiveFile
-    }
+    else -> tasks.find<AbstractArchiveTask>(JavaPlugin.JAR_TASK_NAME)?.archiveFile
   }
 
   private fun Project.setupPaperweightCompat(

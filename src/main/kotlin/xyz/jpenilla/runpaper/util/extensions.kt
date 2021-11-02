@@ -18,8 +18,12 @@ package xyz.jpenilla.runpaper.util
 
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildServiceRegistration
+import org.gradle.jvm.toolchain.JavaLauncher
+import org.gradle.jvm.toolchain.JavaToolchainService
+import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import xyz.jpenilla.runpaper.Constants
 import xyz.jpenilla.runpaper.service.PaperclipService
@@ -30,5 +34,12 @@ internal val Project.paperclipService: Provider<PaperclipService>
     .named<BuildServiceRegistration<PaperclipService, Parameters>>(Constants.Services.PAPERCLIP)
     .flatMap { it.service }
 
-public inline fun <reified T> NamedDomainObjectContainer<*>.find(name: String): T? =
+internal inline fun <reified T> NamedDomainObjectContainer<*>.find(name: String): T? =
   findByName(name) as? T
+
+internal fun Project.findJavaLauncher(): Provider<JavaLauncher>? {
+  val service = project.extensions.findByType<JavaToolchainService>() ?: return null
+  return project.extensions.findByType<JavaPluginExtension>()?.toolchain?.let { toolchain ->
+    service.launcherFor(toolchain)
+  }
+}
