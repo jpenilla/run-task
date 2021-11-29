@@ -22,6 +22,7 @@ import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
@@ -63,6 +64,20 @@ public abstract class RunServerTask : JavaExec() {
   @get:Optional
   @get:InputFile
   public abstract val serverJar: RegularFileProperty
+
+  /**
+   * This property allows configuring a custom classpath to start the
+   * server from. If left empty, Run Paper will resolve a Paperclip
+   * using the Paper downloads API.
+   *
+   * This property and [serverJar] are mutually exclusive, meaning you may
+   * configure one or the other, but not both.
+   *
+   * When configuring this property to have more than one entry, ensure that
+   * [mainClass] has also been set.
+   */
+  @get:Classpath
+  public abstract val serverClasspath: ConfigurableFileCollection
 
   /**
    * Run Paper makes use of Paper's `add-plugin` command line option in order to
@@ -116,8 +131,14 @@ public abstract class RunServerTask : JavaExec() {
     standardInput = System.`in`
     workingDir(runDirectory)
 
-    val paperclip = if (serverJar.isPresent) {
+    if (serverJar.isPresent && !serverClasspath.isEmpty) {
+      error("serverJar and serverClasspath must not be used at the same time!")
+    }
+
+    val selectedServerClasspath = if (serverJar.isPresent) {
       serverJar.path
+    } else if (!serverClasspath.isEmpty) {
+      serverClasspath
     } else {
       project.paperclipService.get().resolvePaperclip(
         project,
@@ -125,7 +146,7 @@ public abstract class RunServerTask : JavaExec() {
         paperBuild.get()
       )
     }
-    classpath(paperclip)
+    classpath(selectedServerClasspath)
 
     // Set disable watchdog property for debugging
     systemProperty("disable.watchdog", true)

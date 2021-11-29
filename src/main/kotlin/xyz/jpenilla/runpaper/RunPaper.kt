@@ -18,6 +18,7 @@ package xyz.jpenilla.runpaper
 
 import io.papermc.paperweight.tasks.RemapJar
 import io.papermc.paperweight.userdev.PaperweightUserExtension
+import io.papermc.paperweight.util.constants.MOJANG_MAPPED_SERVER_RUNTIME_CONFIG
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.RegularFile
@@ -104,13 +105,31 @@ public class RunPaper : Plugin<Project> {
       minecraftVersion.convention(paperweight.minecraftVersion)
     }
 
-    tasks.register<RunServerTask>(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
+    val runMojangMappedServer = tasks.register<RunServerTask>(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
       group = Constants.TASK_GROUP
       description = "Run a Mojang mapped Paper server for plugin testing, by integrating with paperweight."
-      serverJar.value(paperweight.mojangMappedServerJar).disallowChanges()
       minecraftVersion.value(paperweight.minecraftVersion).disallowChanges()
-      if (runPaperExtension.detectPluginJar.get()) {
-        pluginJars(tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
+
+      val serverRuntimeConfig = configurations.findByName(MOJANG_MAPPED_SERVER_RUNTIME_CONFIG)
+      if (serverRuntimeConfig == null) {
+        val legacyMethod = PaperweightUserExtension::class.java.declaredMethods.find {
+          it.name == "getMojangMappedServerJar" && it.returnType == Provider::class.java
+        } ?: error("Could not find getMojangMappedServerJar on PaperweightUserExtension")
+
+        @Suppress("unchecked_cast")
+        val mojangMappedServerJarProvider = legacyMethod(paperweight) as Provider<RegularFile>
+        serverJar.value(mojangMappedServerJarProvider).disallowChanges()
+      } else {
+        mainClass.value("org.bukkit.craftbukkit.Main").disallowChanges()
+        serverClasspath.from(serverRuntimeConfig).disallowChanges()
+      }
+    }
+
+    afterEvaluate {
+      runMojangMappedServer {
+        if (runPaperExtension.detectPluginJar.get()) {
+          pluginJars(tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
+        }
       }
     }
   }
