@@ -26,6 +26,9 @@ dependencies {
 
 kotlin {
   explicitApi()
+  jvmToolchain {
+    (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(8))
+  }
 }
 
 tasks {
@@ -45,9 +48,6 @@ tasks {
 }
 
 indra {
-  javaVersions {
-    target(8)
-  }
   apache2License()
   github("jpenilla", "run-paper")
   publishSnapshotsTo("jmp", "https://repo.jpenilla.xyz/snapshots")
