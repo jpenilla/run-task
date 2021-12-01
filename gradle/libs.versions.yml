@@ -12,7 +12,7 @@ plugins:
 
 versions:
   jackson: 2.13.0
-  paperweight: 1.3.0-SNAPSHOT
+  paperweight: 1.3.0
 
 dependencies:
   jacksonModuleKotlin:
