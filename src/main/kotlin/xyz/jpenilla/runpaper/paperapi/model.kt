@@ -16,6 +16,9 @@
  */
 package xyz.jpenilla.runpaper.paperapi
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class BuildResponse(
   val projectId: String,
   val projectName: String,
@@ -23,57 +26,66 @@ internal data class BuildResponse(
   val build: Int,
   val time: String,
   val changes: List<Change>,
-  val downloads: Map<String, Download>
+  val downloads: Map<String, Download>,
+  val channel: String,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class Change(
   val commit: String,
   val summary: String,
-  val message: String
+  val message: String,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class Download(
   val name: String,
-  val sha256: String
+  val sha256: String,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class ProjectsResponse(
-  val projects: List<String>
+  val projects: List<String>,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class ProjectResponse(
   val projectId: String,
   val projectName: String,
   val versionGroups: List<String>,
-  val versions: List<String>
+  val versions: List<String>,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class VersionGroupBuild(
   val build: Int,
   val time: String,
   val changes: List<Change>,
   val version: String,
-  val downloads: Map<String, Download>
+  val downloads: Map<String, Download>,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class VersionGroupBuildsResponse(
   val projectId: String,
   val projectName: String,
   val versionGroup: String,
   val versions: List<String>,
-  val builds: List<VersionGroupBuild>
+  val builds: List<VersionGroupBuild>,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class VersionGroupResponse(
   val projectId: String,
   val projectName: String,
   val versionGroup: String,
-  val versions: List<String>
+  val versions: List<String>,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 internal data class VersionResponse(
   val projectId: String,
   val projectName: String,
   val version: String,
-  val builds: List<Int>
+  val builds: List<Int>,
 )
