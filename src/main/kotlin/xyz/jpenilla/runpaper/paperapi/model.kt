@@ -28,6 +28,7 @@ internal data class BuildResponse(
   val changes: List<Change>,
   val downloads: Map<String, Download>,
   val channel: String,
+  val promoted: Boolean,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
