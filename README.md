@@ -11,7 +11,7 @@ Apply the plugin in your project buildscript.
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-paper") version "1.0.5"
+  id("xyz.jpenilla.run-paper") version "1.0.6"
 }
 
 tasks {
