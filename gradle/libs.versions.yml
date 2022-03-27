@@ -4,15 +4,15 @@ metadata:
     - plugins
 
 plugins:
-  net.kyori.indra: &indra 2.0.6
+  net.kyori.indra: &indra 2.1.1
   net.kyori.indra.license-header: *indra
   net.kyori.indra.publishing.gradle-plugin: *indra
-  com.gradle.plugin-publish: 0.18.0
-  org.jlleitschuh.gradle.ktlint: 10.2.0
+  com.gradle.plugin-publish: 0.20.0
+  org.jlleitschuh.gradle.ktlint: 10.2.1
 
 versions:
-  jackson: 2.13.0
-  paperweight: 1.3.0
+  jackson: 2.13.2
+  paperweight: 1.3.5
 
 dependencies:
   jacksonModuleKotlin:
