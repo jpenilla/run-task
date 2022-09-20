@@ -57,6 +57,13 @@ public abstract class RunServerTask : JavaExec() {
   public abstract val minecraftVersion: Property<String>
 
   /**
+   * The java arguments to add to the startup command. These appear before the -jar argument.
+   */
+  @get:Optional
+  @get:Input
+  public abstract val jvmArguments: Property<String>
+
+  /**
    * Setting this property allows configuring a custom jar file to start the
    * server from. If left un-configured, Run Paper will resolve a Paperclip
    * using the Paper downloads API.
@@ -156,6 +163,11 @@ public abstract class RunServerTask : JavaExec() {
     // Add our arguments
     if (minecraftVersionIsSameOrNewerThan(1, 15)) {
       args("--nogui")
+    }
+
+    // Add custom JVM arguments
+    if (jvmArguments.isPresent) {
+      jvmArgs(jvmArguments.get())
     }
   }
 
