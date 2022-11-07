@@ -20,19 +20,9 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
-import org.gradle.api.services.BuildServiceRegistration
 import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.findByType
-import org.gradle.kotlin.dsl.named
-import xyz.jpenilla.runpaper.Constants
-import xyz.jpenilla.runpaper.service.PaperclipService
-import xyz.jpenilla.runpaper.service.PaperclipService.Parameters
-
-internal val Project.paperclipService: Provider<PaperclipService>
-  get() = gradle.sharedServices.registrations
-    .named<BuildServiceRegistration<PaperclipService, Parameters>>(Constants.Services.PAPERCLIP)
-    .flatMap { it.service }
 
 internal inline fun <reified T> NamedDomainObjectContainer<*>.find(name: String): T? =
   findByName(name) as? T

@@ -22,14 +22,13 @@ import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.net.URL
 
-internal class DownloadsAPI {
-  private companion object {
-    val MAPPER: JsonMapper = JsonMapper.builder()
+internal class DownloadsAPI(private val endpoint: String) {
+  companion object {
+    const val PAPER_ENDPOINT: String = "https://papermc.io/api/v2/"
+    private val MAPPER: JsonMapper = JsonMapper.builder()
       .addModule(kotlinModule())
       .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
       .build()
-
-    const val ENDPOINT: String = "https://papermc.io/api/v2/"
   }
 
   /**
@@ -40,7 +39,7 @@ internal class DownloadsAPI {
    * @return response
    */
   private inline fun <reified R> makeQuery(query: String): R {
-    val response = URL(ENDPOINT + query).readText(Charsets.UTF_8)
+    val response = URL(endpoint + query).readText(Charsets.UTF_8)
     return MAPPER.readValue(response)
   }
 
@@ -69,6 +68,6 @@ internal class DownloadsAPI {
   }
 
   fun downloadURL(projectName: String, version: String, build: Int, download: Download): String {
-    return ENDPOINT + "projects/$projectName/versions/$version/builds/$build/downloads/${download.name}"
+    return endpoint + "projects/$projectName/versions/$version/builds/$build/downloads/${download.name}"
   }
 }

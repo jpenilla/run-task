@@ -30,7 +30,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Optional
 import org.gradle.kotlin.dsl.property
-import xyz.jpenilla.runpaper.util.paperclipService
+import xyz.jpenilla.runpaper.service.PaperclipService
 import xyz.jpenilla.runpaper.util.path
 import java.io.File
 import kotlin.io.path.copyTo
@@ -46,7 +46,11 @@ import kotlin.io.path.name
  */
 @Suppress("unused")
 public abstract class RunServerTask : JavaExec() {
-  private val paperBuild: Property<PaperBuild> = project.objects.property<PaperBuild>().convention(PaperBuild.Latest)
+  /**
+   * The build of Paper to use.
+   */
+  @get: Internal
+  public val paperBuild: Property<PaperclipService.Build> = objectFactory.property<PaperclipService.Build>().convention(PaperclipService.Build.Latest)
 
   /**
    * The Minecraft version for this [RunServerTask]. This version will be used
@@ -80,6 +84,18 @@ public abstract class RunServerTask : JavaExec() {
   public abstract val serverClasspath: ConfigurableFileCollection
 
   /**
+   * Service used to resolve Paper when [serverJar] and [serverClasspath] are not configured.
+   */
+  @get:Internal
+  public val paperclipService: Property<PaperclipService> = objectFactory.property<PaperclipService>().convention(PaperclipService.paper(project))
+
+  /**
+   * Used in startup log.
+   */
+  @get:Internal
+  public val serverDisplayName: Property<String> = objectFactory.property<String>().convention("Paper")
+
+  /**
    * Run Paper makes use of Paper's `add-plugin` command line option in order to
    * load the files in [pluginJars] as plugins. This option was implemented during
    * the Minecraft 1.16.5 development cycle, and does not exist in prior versions.
@@ -101,7 +117,7 @@ public abstract class RunServerTask : JavaExec() {
    * Defaults to `run` in the project directory.
    */
   @Internal
-  public val runDirectory: DirectoryProperty = project.objects.directoryProperty().convention(project.layout.projectDirectory.dir("run"))
+  public val runDirectory: DirectoryProperty = objectFactory.directoryProperty().convention(project.layout.projectDirectory.dir("run"))
 
   /**
    * The collection of plugin jars to load. Run Paper will attempt to locate
@@ -118,7 +134,7 @@ public abstract class RunServerTask : JavaExec() {
   override fun exec() {
     configure()
     beforeExec()
-    logger.lifecycle("Starting Paper...")
+    logger.lifecycle("Starting {}...", serverDisplayName.get())
     logger.lifecycle("")
     super.exec()
   }
@@ -140,7 +156,7 @@ public abstract class RunServerTask : JavaExec() {
     } else if (!serverClasspath.isEmpty) {
       serverClasspath
     } else {
-      project.paperclipService.get().resolvePaperclip(
+      paperclipService.get().resolvePaperclip(
         project,
         minecraftVersion.get(),
         paperBuild.get()
@@ -231,18 +247,29 @@ public abstract class RunServerTask : JavaExec() {
    *
    * @param build paper build
    */
+  @Deprecated("PaperBuild has been deprecated, use PaperclipService.Build instead")
   public fun paperBuild(build: PaperBuild) {
+    paperBuild(build.asNew())
+  }
+
+  /**
+   * Sets the build of Paper to use. By default, [PaperclipService.Build.Latest] is
+   * used, which uses the latest build for the configured Minecraft version.
+   *
+   * @param build paper build
+   */
+  public fun paperBuild(build: PaperclipService.Build) {
     paperBuild.set(build)
   }
 
   /**
-   * Sets a specific build number of Paper to use. [PaperBuild.Latest] is
+   * Sets a specific build number of Paper to use. [PaperclipService.Build.Latest] is
    * used, which uses the latest build for the configured Minecraft version.
    *
    * @param paperBuildNumber build number
    */
   public fun paperBuild(paperBuildNumber: Int) {
-    paperBuild.set(PaperBuild.Specific(paperBuildNumber))
+    paperBuild.set(PaperclipService.Build.Specific(paperBuildNumber))
   }
 
   /**
@@ -321,7 +348,16 @@ public abstract class RunServerTask : JavaExec() {
   /**
    * Represents a build of Paper.
    */
+  @Deprecated(
+    "Replaced by PaperclipService.Build",
+    replaceWith = ReplaceWith("PaperclipService.Build", "xyz.jpenilla.runpaper.service.PaperclipService")
+  )
   public sealed class PaperBuild {
+    internal fun asNew(): PaperclipService.Build = when (this) {
+      is Latest -> PaperclipService.Build.Latest
+      is Specific -> PaperclipService.Build.Specific(buildNumber)
+    }
+
     public companion object {
       /**
        * [PaperBuild] instance pointing to the latest Paper build for the configured Minecraft version.

@@ -31,25 +31,24 @@ import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.registerIfAbsent
 import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withType
+import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
+import xyz.jpenilla.runpaper.paperapi.Projects
 import xyz.jpenilla.runpaper.service.PaperclipService
 import xyz.jpenilla.runpaper.task.RunServerTask
 import xyz.jpenilla.runpaper.util.find
 import xyz.jpenilla.runpaper.util.findJavaLauncher
-import xyz.jpenilla.runpaper.util.set
 import xyz.jpenilla.runpaper.util.sharedCaches
 
 public class RunPaper : Plugin<Project> {
   override fun apply(target: Project) {
     val runPaperExtension = target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
 
-    target.gradle.sharedServices.registerIfAbsent(Constants.Services.PAPERCLIP, PaperclipService::class) {
-      maxParallelUsages.set(1)
-      parameters.cacheDirectory.set(target.sharedCaches.resolve(Constants.RUN_PAPER_PATH))
-      parameters.refreshDependencies.set(target.gradle.startParameter.isRefreshDependencies)
-      parameters.offlineMode.set(target.gradle.startParameter.isOffline)
+    PaperclipService.register(target) {
+      downloadsEndpoint = DownloadsAPI.PAPER_ENDPOINT
+      downloadProjectName = Projects.PAPER
+      buildServiceName = Constants.Services.PAPERCLIP
     }
 
     target.tasks.register<Delete>(Constants.Tasks.CLEAN_PAPERCLIP_CACHE) {

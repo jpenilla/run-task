@@ -16,305 +16,118 @@
  */
 package xyz.jpenilla.runpaper.service
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.kotlinModule
-import com.fasterxml.jackson.module.kotlin.readValue
-import org.gradle.api.InvalidUserDataException
+import org.gradle.api.Action
 import org.gradle.api.Project
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.logging.Logger
-import org.gradle.api.logging.Logging
-import org.gradle.api.provider.Property
-import org.gradle.api.services.BuildService
-import org.gradle.api.services.BuildServiceParameters
+import org.gradle.api.provider.Provider
+import org.gradle.api.services.BuildServiceRegistration
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.registerIfAbsent
 import xyz.jpenilla.runpaper.Constants
-import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
-import xyz.jpenilla.runpaper.paperapi.Projects
-import xyz.jpenilla.runpaper.task.RunServerTask
-import xyz.jpenilla.runpaper.util.Downloader
-import xyz.jpenilla.runpaper.util.InvalidDurationException
-import xyz.jpenilla.runpaper.util.LoggingDownloadListener
-import xyz.jpenilla.runpaper.util.ProgressLoggerUtil
-import xyz.jpenilla.runpaper.util.parseDuration
-import xyz.jpenilla.runpaper.util.path
-import xyz.jpenilla.runpaper.util.prettyPrint
-import xyz.jpenilla.runpaper.util.sha256
-import java.io.IOException
-import java.net.URL
+import xyz.jpenilla.runpaper.util.set
+import xyz.jpenilla.runpaper.util.sharedCaches
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
-import java.time.Duration
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.bufferedReader
-import kotlin.io.path.bufferedWriter
-import kotlin.io.path.createDirectories
-import kotlin.io.path.createTempDirectory
-import kotlin.io.path.deleteIfExists
-import kotlin.io.path.isRegularFile
-import kotlin.io.path.moveTo
 
-internal abstract class PaperclipService : BuildService<PaperclipService.Parameters>, AutoCloseable {
-  interface Parameters : BuildServiceParameters {
-    val cacheDirectory: DirectoryProperty
-    val refreshDependencies: Property<Boolean>
-    val offlineMode: Property<Boolean>
-  }
+/**
+ * Service that downloads and caches Paperclip jars.
+ */
+public interface PaperclipService {
+  /**
+   * Resolve a Paperclip.
+   *
+   * @param project project to use for context
+   * @param minecraftVersion minecraft version string
+   * @param paperBuild build to resolve
+   */
+  public fun resolvePaperclip(
+    project: Project,
+    minecraftVersion: String,
+    paperBuild: Build
+  ): Path
 
-  companion object {
-    private val LOGGER: Logger = Logging.getLogger(PaperclipService::class.java)
-  }
+  public companion object {
+    /**
+     * Registers a [PaperclipService] with the provided configuration. If
+     * there is already a [PaperclipService] registered with the configured
+     * name, it will be returned instead.
+     *
+     * @param project project
+     * @param op builder configurer
+     */
+    public fun register(
+      project: Project,
+      op: Action<RegistrationBuilder>
+    ): Provider<out PaperclipService> {
+      val builder = object : RegistrationBuilder {
+        override var buildServiceName: String? = null
+        override var downloadsEndpoint: String? = null
+        override var downloadProjectName: String? = null
+        override var downloadProjectDisplayName: String? = null
+      }
+      op.execute(builder)
+      val proj = requireNotNull(builder.downloadProjectName) { "Missing downloadProjectName" }
+      val endpoint = requireNotNull(builder.downloadsEndpoint) { "Missing downloadsEndpoint" }
+      val serviceName = builder.buildServiceName ?: "$proj-paperclip_service"
+      return project.gradle.sharedServices.registerIfAbsent(serviceName, PaperclipServiceImpl::class) {
+        maxParallelUsages.set(1)
+        parameters.downloadsEndpoint.set(endpoint)
+        parameters.downloadProject.set(proj)
+        parameters.downloadProjectDisplayName.set(builder.downloadProjectDisplayName ?: proj.defaultDisplayName())
+        parameters.cacheDirectory.set(project.sharedCaches.resolve(Constants.RUN_PAPER_PATH).run {
+          if (serviceName == Constants.Services.PAPERCLIP) this else resolve(serviceName)
+        })
+        parameters.refreshDependencies.set(project.gradle.startParameter.isRefreshDependencies)
+        parameters.offlineMode.set(project.gradle.startParameter.isOffline)
+      }
+    }
 
-  private val api: DownloadsAPI = DownloadsAPI()
-  private val mapper: JsonMapper = JsonMapper.builder()
-    .enable(SerializationFeature.INDENT_OUTPUT)
-    .addModule(kotlinModule())
-    .build()
-  private val versionsFile: Path = parameters.cacheDirectory.file("versions.json").path
+    private fun String.defaultDisplayName(): String =
+      split(' ').joinToString(" ") { it.capitalize() }
 
-  private var versions = loadOrCreateVersions()
-
-  init {
-    cleanLocalCache()
+    /**
+     * Get the default [PaperclipService] used to download Paper.
+     *
+     * @param project project
+     */
+    public fun paper(project: Project): Provider<out PaperclipService> =
+      project.gradle.sharedServices.registrations
+        .named<BuildServiceRegistration<PaperclipServiceImpl, PaperclipServiceImpl.Parameters>>(Constants.Services.PAPERCLIP)
+        .flatMap { it.service }
   }
 
   /**
-   * Cleans the local Paperclip cache. We only keep a certain amount of Paperclips
-   * for each Minecraft version. Paperclips fetched by version number and not using
-   * [RunServerTask.PaperBuild.Latest] will not be cleaned up, the `cleanPaperclipCache`
-   * task must be used to fully clear the cache for this.
+   * Builder for [PaperclipService] registration.
    */
-  private fun cleanLocalCache() {
-    // how many Paperclips to cache for each Minecraft version
-    val perVersionCacheSize = 5
+  public interface RegistrationBuilder {
+    /**
+     * Name for the build service, will be derived from [downloadProjectName] if null.
+     */
+    public var buildServiceName: String?
 
-    for ((versionName, version) in versions.versions) {
-      val jars = version.knownJars.filterNot { it.value.keep }.toMutableMap()
-      if (jars.isEmpty()) {
-        continue
-      }
-      while (jars.size > perVersionCacheSize) {
-        val oldestBuild = jars.keys.minOrNull() ?: error("Could not determine oldest build.")
-        val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
-        version.knownJars.remove(oldestBuild)
+    /**
+     * Paper downloads API v2 endpoint.
+     */
+    public var downloadsEndpoint: String?
 
-        val oldPaperclipFile = paperclipsFor(versionName).resolve(removed.fileName)
-        try {
-          oldPaperclipFile.deleteIfExists()
-        } catch (ex: IOException) {
-          LOGGER.warn("Failed to delete Paperclip at {}", oldPaperclipFile.absolutePathString(), ex)
-        }
-        writeVersions()
-      }
-    }
+    /**
+     * Name of the project to download.
+     */
+    public var downloadProjectName: String?
+
+    /**
+     * Display name for the downloaded project, will be derived from [downloadProjectName] if null.
+     */
+    public var downloadProjectDisplayName: String?
   }
 
-  private fun paperclipsFor(minecraftVersion: String): Path =
-    paperclips.resolve(minecraftVersion)
+  /**
+   * Represents a build of Paper.
+   */
+  public sealed class Build {
+    /**
+     * [Build] pointing to the latest Paper build for the configured Minecraft version.
+     */
+    public object Latest : Build()
 
-  private val paperclips: Path
-    get() = parameters.cacheDirectory.path.resolve("paperclips")
-
-  fun resolvePaperclip(
-    project: Project,
-    minecraftVersion: String,
-    paperBuild: RunServerTask.PaperBuild
-  ): Path {
-    versions = loadOrCreateVersions()
-
-    val version = versions.versions.computeIfAbsent(minecraftVersion) { Version(it) }
-    val build = resolveBuildNumber(project, version, paperBuild)
-
-    val possible = version.knownJars[build]
-    if (possible != null && !parameters.refreshDependencies.get()) {
-      // We already have this Paperclip!
-      LOGGER.lifecycle("Located Paper {} build {} in local cache.", minecraftVersion, build)
-
-      // Verify hash is still correct
-      val localPaperclip = paperclipsFor(minecraftVersion).resolve(possible.fileName)
-      val localBuildHash = localPaperclip.sha256()
-      if (localBuildHash == possible.sha256) {
-        if (paperBuild is RunServerTask.PaperBuild.Specific) {
-          version.knownJars[build] = possible.copy(keep = true)
-          writeVersions()
-        }
-        // Hash is good, return
-        return localPaperclip
-      }
-      version.knownJars.remove(build)
-      writeVersions()
-      localPaperclip.deleteIfExists()
-      LOGGER.lifecycle("Invalid SHA256 hash for locally cached Paper {} build {}, invalidating and attempting to re-download.", minecraftVersion, build)
-      logExpectedActual(possible.sha256, localBuildHash)
-    }
-
-    // Need to fetch new Paperclip!
-    if (parameters.offlineMode.get()) {
-      error("Offline mode is enabled and Run Paper could not locate a locally cached build.")
-    }
-    LOGGER.lifecycle("Downloading Paper {} build {}...", minecraftVersion, build)
-    val buildResponse = api.build(Projects.PAPER, minecraftVersion, build)
-    val download = buildResponse.downloads["application"] ?: error("Could not find download.")
-    val downloadLink = api.downloadURL(Projects.PAPER, minecraftVersion, build, download)
-    val downloadURL = URL(downloadLink)
-
-    val tempFile = createTempDirectory("runpaper")
-      .resolve("paperclip-$minecraftVersion-$build-${System.currentTimeMillis()}.jar.tmp")
-
-    val start = System.currentTimeMillis()
-    val downloadResult = Downloader(downloadURL, tempFile)
-      .download(createDownloadListener(project))
-
-    when (downloadResult) {
-      is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading Paper, took {}.", Duration.ofMillis(System.currentTimeMillis() - start).prettyPrint())
-      is Downloader.Result.Failure -> throw IllegalStateException("Failed to download Paper.", downloadResult.throwable)
-    }
-
-    // Verify SHA256 hash of downloaded jar
-    val downloadedFileHash = tempFile.sha256()
-    if (downloadedFileHash != download.sha256) {
-      tempFile.deleteIfExists()
-      LOGGER.lifecycle("Invalid SHA256 hash for downloaded file: '{}', deleting.", download.name)
-      logExpectedActual(download.sha256, downloadedFileHash)
-      error("Failed to verify SHA256 hash of downloaded file.")
-    }
-    LOGGER.lifecycle("Verified SHA256 hash of downloaded jar.")
-
-    val paperclipsDir = paperclipsFor(minecraftVersion)
-    paperclipsDir.createDirectories()
-    val fileName = "paperclip-$minecraftVersion-$build.jar"
-    val destination = paperclipsDir.resolve(fileName)
-
-    tempFile.moveTo(destination, StandardCopyOption.REPLACE_EXISTING)
-
-    version.knownJars[build] = PaperclipJar(
-      build,
-      fileName,
-      download.sha256,
-      // If the build was specifically requested, (as opposed to resolved as latest) mark the jar for keeping
-      paperBuild is RunServerTask.PaperBuild.Specific
-    )
-    writeVersions()
-
-    return destination
+    public data class Specific internal constructor(internal val buildNumber: Int) : Build()
   }
-
-  private fun resolveBuildNumber(
-    project: Project,
-    minecraftVersion: Version,
-    paperBuild: RunServerTask.PaperBuild
-  ): Int {
-    if (paperBuild is RunServerTask.PaperBuild.Specific) {
-      return paperBuild.buildNumber
-    }
-
-    if (parameters.offlineMode.get()) {
-      LOGGER.lifecycle("Offline mode enabled, attempting to use latest local build of Paper for Minecraft {}.", minecraftVersion)
-      return resolveLatestLocalBuild(minecraftVersion)
-    }
-
-    if (!parameters.refreshDependencies.get()) {
-      val checkFrequency = updateCheckFrequency(project)
-      val timeSinceLastCheck = System.currentTimeMillis() - minecraftVersion.lastUpdateCheck
-      if (timeSinceLastCheck <= checkFrequency.toMillis()) {
-        return resolveLatestLocalBuild(minecraftVersion)
-      }
-    }
-
-    return resolveLatestRemoteBuild(minecraftVersion)
-  }
-
-  private fun resolveLatestLocalBuild(minecraftVersion: Version): Int {
-    return minecraftVersion.knownJars.keys.maxOrNull()
-      ?: unknownMinecraftVersion(minecraftVersion.name)
-  }
-
-  private fun resolveLatestRemoteBuild(minecraftVersion: Version): Int = try {
-    LOGGER.lifecycle("Fetching Paper builds for Minecraft {}...", minecraftVersion.name)
-    api.version(Projects.PAPER, minecraftVersion.name).builds.last().apply {
-      LOGGER.lifecycle("Latest build for {} is {}.", minecraftVersion.name, this)
-      versions.versions[minecraftVersion.name] = minecraftVersion.copy(lastUpdateCheck = System.currentTimeMillis())
-      writeVersions()
-    }
-  } catch (ex: Exception) {
-    LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
-    resolveLatestLocalBuild(minecraftVersion)
-  }
-
-  private fun createDownloadListener(project: Project): Downloader.ProgressListener {
-    // ProgressLogger is internal Gradle API and can technically be changed,
-    // (although it hasn't since 3.x) so we access it using reflection, and
-    // fallback to using LOGGER if it fails
-    val progressLogger = ProgressLoggerUtil.createProgressLogger(project, Constants.RUN_PAPER)
-    return if (progressLogger != null) {
-      LoggingDownloadListener(
-        progressLogger,
-        { state, message -> state.start("Downloading Paper", message) },
-        { state, message -> state.progress(message) },
-        { state -> state.completed() },
-        "Downloading Paperclip: ",
-        10L
-      )
-    } else {
-      LoggingDownloadListener(
-        LOGGER,
-        logger = { state, message -> state.lifecycle(message) },
-        prefix = "Downloading Paperclip: ",
-        updateRateMs = 1000L
-      )
-    }
-  }
-
-  private fun logExpectedActual(expected: String, actual: String) {
-    LOGGER.lifecycle(" > Expected: {}", expected)
-    LOGGER.lifecycle(" > Actual: {}", actual)
-  }
-
-  private fun updateCheckFrequency(project: Project): Duration =
-    project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY).run {
-      if (this == null) {
-        return@run Duration.ofHours(1) // default to 1 hour if unset
-      }
-      try {
-        parseDuration(this as String)
-      } catch (ex: InvalidDurationException) {
-        throw InvalidUserDataException("Unable to parse value for property '${Constants.Properties.UPDATE_CHECK_FREQUENCY}'.\n${ex.message}", ex)
-      }
-    }
-
-  override fun close() {
-  }
-
-  private fun loadOrCreateVersions(): Versions {
-    return if (!versionsFile.isRegularFile()) {
-      Versions()
-    } else {
-      versionsFile.bufferedReader().use { reader -> mapper.readValue(reader) }
-    }
-  }
-
-  private fun writeVersions() {
-    versionsFile.parent.createDirectories()
-    versionsFile.bufferedWriter().use { writer -> mapper.writeValue(writer, versions) }
-  }
-
-  private fun unknownMinecraftVersion(minecraftVersion: String): Nothing =
-    error("Unknown Minecraft Version: $minecraftVersion")
-
-  data class PaperclipJar(
-    val buildNumber: Int,
-    val fileName: String,
-    val sha256: String,
-    val keep: Boolean = false
-  )
-
-  data class Versions(
-    val versions: MutableMap<String, Version> = HashMap()
-  )
-
-  data class Version(
-    val name: String,
-    val lastUpdateCheck: Long = 0L,
-    val knownJars: MutableMap<Int, PaperclipJar> = HashMap(),
-  )
 }
