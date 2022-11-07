@@ -72,9 +72,11 @@ public interface PaperclipService {
         parameters.downloadsEndpoint.set(endpoint)
         parameters.downloadProject.set(proj)
         parameters.downloadProjectDisplayName.set(builder.downloadProjectDisplayName ?: proj.defaultDisplayName())
-        parameters.cacheDirectory.set(project.sharedCaches.resolve(Constants.RUN_PAPER_PATH).run {
-          if (serviceName == Constants.Services.PAPERCLIP) this else resolve(serviceName)
-        })
+        parameters.cacheDirectory.set(
+          project.sharedCaches.resolve(Constants.RUN_PAPER_PATH).run {
+            if (serviceName == Constants.Services.PAPERCLIP) this else resolve(serviceName)
+          }
+        )
         parameters.refreshDependencies.set(project.gradle.startParameter.isRefreshDependencies)
         parameters.offlineMode.set(project.gradle.startParameter.isOffline)
       }
