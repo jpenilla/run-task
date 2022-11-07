@@ -36,7 +36,7 @@ tasks {
     kotlinOptions {
       apiVersion = "1.4"
       jvmTarget = "1.8"
-      freeCompilerArgs = listOf("-Xopt-in=kotlin.io.path.ExperimentalPathApi")
+      freeCompilerArgs = listOf("-opt-in=kotlin.io.path.ExperimentalPathApi")
     }
   }
 
