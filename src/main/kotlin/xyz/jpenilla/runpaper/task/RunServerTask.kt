@@ -49,7 +49,7 @@ public abstract class RunServerTask : JavaExec() {
   /**
    * The build of Paper to use.
    */
-  @get: Internal
+  @get:Internal
   public val paperBuild: Property<PaperclipService.Build> = objectFactory.property<PaperclipService.Build>().convention(PaperclipService.Build.Latest)
 
   /**
