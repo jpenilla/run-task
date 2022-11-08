@@ -19,10 +19,10 @@ package xyz.jpenilla.runpaper.service
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
-import org.gradle.api.services.BuildServiceRegistration
-import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.registerIfAbsent
 import xyz.jpenilla.runpaper.Constants
+import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
+import xyz.jpenilla.runpaper.paperapi.Projects
 import xyz.jpenilla.runpaper.util.set
 import xyz.jpenilla.runpaper.util.sharedCaches
 import java.nio.file.Path
@@ -53,7 +53,7 @@ public interface PaperclipService {
      * @param project project
      * @param op builder configurer
      */
-    public fun register(
+    public fun registerIfAbsent(
       project: Project,
       op: Action<RegistrationBuilder>
     ): Provider<out PaperclipService> {
@@ -90,10 +90,11 @@ public interface PaperclipService {
      *
      * @param project project
      */
-    public fun paper(project: Project): Provider<out PaperclipService> =
-      project.gradle.sharedServices.registrations
-        .named<BuildServiceRegistration<PaperclipServiceImpl, PaperclipServiceImpl.Parameters>>(Constants.Services.PAPERCLIP)
-        .flatMap { it.service }
+    public fun paper(project: Project): Provider<out PaperclipService> = registerIfAbsent(project) {
+      downloadsEndpoint = DownloadsAPI.PAPER_ENDPOINT
+      downloadProjectName = Projects.PAPER
+      buildServiceName = Constants.Services.PAPERCLIP
+    }
   }
 
   /**

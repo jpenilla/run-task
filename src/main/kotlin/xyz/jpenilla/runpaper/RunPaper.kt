@@ -33,8 +33,6 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withType
-import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
-import xyz.jpenilla.runpaper.paperapi.Projects
 import xyz.jpenilla.runpaper.service.PaperclipService
 import xyz.jpenilla.runpaper.task.RunServerTask
 import xyz.jpenilla.runpaper.util.find
@@ -44,12 +42,7 @@ import xyz.jpenilla.runpaper.util.sharedCaches
 public class RunPaper : Plugin<Project> {
   override fun apply(target: Project) {
     val runPaperExtension = target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
-
-    PaperclipService.register(target) {
-      downloadsEndpoint = DownloadsAPI.PAPER_ENDPOINT
-      downloadProjectName = Projects.PAPER
-      buildServiceName = Constants.Services.PAPERCLIP
-    }
+    PaperclipService.paper(target)
 
     target.tasks.register<Delete>(Constants.Tasks.CLEAN_PAPERCLIP_CACHE) {
       group = Constants.TASK_GROUP
