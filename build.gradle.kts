@@ -16,7 +16,7 @@ description = "Gradle plugin adding a task to run a Paper Minecraft server"
 repositories {
   mavenCentral()
   gradlePluginPortal()
-  maven("https://papermc.io/repo/repository/maven-public/")
+  maven("https://repo.papermc.io/repository/maven-public/")
 }
 
 dependencies {
