@@ -131,6 +131,6 @@ public interface PaperclipService {
      */
     public object Latest : Build()
 
-    public data class Specific internal constructor(internal val buildNumber: Int) : Build()
+    public data class Specific(public val buildNumber: Int) : Build()
   }
 }
