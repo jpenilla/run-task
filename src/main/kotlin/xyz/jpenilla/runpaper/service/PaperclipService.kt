@@ -83,7 +83,7 @@ public interface PaperclipService {
     }
 
     private fun String.defaultDisplayName(): String =
-      split(' ').joinToString(" ") { it.capitalize() }
+      split('-').joinToString(" ") { it.capitalize() }
 
     /**
      * Get the default [PaperclipService] used to download Paper.
