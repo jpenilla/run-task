@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "xyz.jpenilla"
-version = "1.1.0-SNAPSHOT"
+version = "1.1.0"
 description = "Gradle plugin adding a task to run a Paper Minecraft server"
 
 repositories {
@@ -56,7 +56,7 @@ indra {
       developers {
         developer {
           id.set("jmp")
-          timezone.set("America/Los Angeles")
+          timezone.set("America/Phoenix")
         }
       }
     }

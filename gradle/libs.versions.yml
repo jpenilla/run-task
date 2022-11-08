@@ -4,10 +4,10 @@ metadata:
     - plugins
 
 plugins:
-  net.kyori.indra: &indra 2.2.0
+  net.kyori.indra: &indra 2.1.1
   net.kyori.indra.license-header: *indra
   net.kyori.indra.publishing.gradle-plugin: *indra
-  com.gradle.plugin-publish: 1.0.0
+  com.gradle.plugin-publish: 0.20.0
   org.jlleitschuh.gradle.ktlint: 11.0.0
 
 versions:
