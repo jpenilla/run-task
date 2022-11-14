@@ -18,11 +18,17 @@ package xyz.jpenilla.runtask.util
 
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.UnknownTaskException
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.TaskContainer
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.findByType
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 
 internal inline fun <reified T> NamedDomainObjectContainer<*>.find(name: String): T? =
   findByName(name) as? T
@@ -32,4 +38,13 @@ internal fun Project.findJavaLauncher(): Provider<JavaLauncher>? {
   return project.extensions.findByType<JavaPluginExtension>()?.toolchain?.let { toolchain ->
     service.launcherFor(toolchain)
   }
+}
+
+internal inline fun <reified T : Task> TaskContainer.maybeRegister(
+  taskName: String,
+  noinline configuration: T.() -> Unit
+): TaskProvider<T> = try {
+  named<T>(taskName)
+} catch (ex: UnknownTaskException) {
+  register(taskName, configuration)
 }
