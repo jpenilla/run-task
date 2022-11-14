@@ -26,22 +26,25 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.named
-import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import xyz.jpenilla.runtask.task.AbstractRun
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.find
 import xyz.jpenilla.runtask.util.findJavaLauncher
+import xyz.jpenilla.runtask.util.maybeRegister
 import xyz.jpenilla.runtask.util.sharedCaches
 
 public abstract class RunPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     target.registerCleanUserCachesTask()
+    javaLauncherConvention(target)
+  }
 
-    target.afterEvaluate {
-      tasks.withType<AbstractRun> {
-        // Use the configured Java toolchain if present
-        findJavaLauncher()?.let { launcher ->
+  private fun javaLauncherConvention(target: Project) {
+    target.plugins.withId("java") {
+      // Use the configured Java toolchain if present
+      target.findJavaLauncher()?.let { launcher ->
+        target.tasks.withType<AbstractRun>().configureEach {
           javaLauncher.convention(launcher)
         }
       }
@@ -61,10 +64,7 @@ public abstract class RunPlugin : Plugin<Project> {
   }
 
   private fun Project.registerCleanUserCachesTask() {
-    if (tasks.findByName(Constants.Tasks.CLEAN_USER_SERVICES_CACHE) != null) {
-      return
-    }
-    tasks.register<Delete>(Constants.Tasks.CLEAN_USER_SERVICES_CACHE) {
+    tasks.maybeRegister<Delete>(Constants.Tasks.CLEAN_USER_SERVICES_CACHE) {
       group = Constants.SHARED_TASK_GROUP
       description = "Delete all locally cached jars for custom downloads API service registrations."
       delete(sharedCaches.resolve(Constants.USER_PATH))
