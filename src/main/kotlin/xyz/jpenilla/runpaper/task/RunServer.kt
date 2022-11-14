@@ -23,15 +23,9 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.AbstractRun
+import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
 import java.io.File
 import java.nio.file.Path
-import kotlin.io.path.copyTo
-import kotlin.io.path.createDirectories
-import kotlin.io.path.deleteIfExists
-import kotlin.io.path.isDirectory
-import kotlin.io.path.isRegularFile
-import kotlin.io.path.listDirectoryEntries
-import kotlin.io.path.name
 
 /**
  * Task to download and run a Paper server along with plugins.
@@ -78,26 +72,16 @@ public abstract class RunServer : AbstractRun() {
   }
 
   private fun setupPlugins(workingDir: Path) {
-    val plugins = workingDir.resolve("plugins")
-    if (!plugins.isDirectory()) {
-      plugins.createDirectories()
-    }
+    val pluginsDir = workingDir.resolve("plugins")
+    val copyingHandler = FileCopyingPluginHandler("RunServer")
 
-    val suffix = "_run-paper_plugin.jar"
-
-    // Delete any jars left over from previous legacy mode runs
-    plugins.listDirectoryEntries()
-      .filter { it.isRegularFile() && it.name.endsWith(suffix) }
-      .forEach { it.deleteIfExists() }
-
-    // Add plugins
     if (addPluginArgumentSupported()) {
+      // Delete any jars left over from previous legacy mode runs, even if we are not currently in legacy mode
+      copyingHandler.deleteOldPlugins(pluginsDir)
+
       args(pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
     } else {
-      pluginJars.files.map { it.toPath() }.forEach { jar ->
-        val name = jar.fileName.toString()
-        jar.copyTo(plugins.resolve(name.substring(0, name.length - 4 /*.jar*/) + suffix))
-      }
+      copyingHandler.setupPlugins(pluginsDir, pluginJars)
     }
   }
 
