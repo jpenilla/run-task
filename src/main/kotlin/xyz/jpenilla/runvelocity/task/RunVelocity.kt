@@ -18,14 +18,8 @@ package xyz.jpenilla.runvelocity.task
 
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.AbstractRun
+import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
 import java.nio.file.Path
-import kotlin.io.path.copyTo
-import kotlin.io.path.createDirectories
-import kotlin.io.path.deleteIfExists
-import kotlin.io.path.isDirectory
-import kotlin.io.path.isRegularFile
-import kotlin.io.path.listDirectoryEntries
-import kotlin.io.path.name
 
 /**
  * Task to download and run a Velocity server along with plugins.
@@ -37,27 +31,8 @@ public abstract class RunVelocity : AbstractRun() {
   }
 
   override fun preExec(workingDir: Path) {
-    setupPlugins(workingDir)
-  }
-
-  private fun setupPlugins(workingDir: Path) {
-    val plugins = workingDir.resolve("plugins")
-    if (!plugins.isDirectory()) {
-      plugins.createDirectories()
-    }
-
-    val suffix = "_run-velocity_plugin.jar"
-
-    // Delete any jars left over from previous runs
-    plugins.listDirectoryEntries()
-      .filter { it.isRegularFile() && it.name.endsWith(suffix) }
-      .forEach { it.deleteIfExists() }
-
-    // Add plugins
-    pluginJars.files.map { it.toPath() }.forEach { jar ->
-      val name = jar.fileName.toString()
-      jar.copyTo(plugins.resolve(name.substring(0, name.length - 4 /*.jar*/) + suffix))
-    }
+    FileCopyingPluginHandler("RunVelocity")
+      .setupPlugins(workingDir.resolve("plugins"), pluginJars)
   }
 
   /**
