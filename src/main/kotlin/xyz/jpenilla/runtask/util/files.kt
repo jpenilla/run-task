@@ -1,5 +1,5 @@
 /*
- * Run Paper Gradle Plugin
+ * Run Task Gradle Plugins
  * Copyright (c) 2021-2022 Jason Penilla
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.jpenilla.runpaper.util
+package xyz.jpenilla.runtask.util
 
 import org.gradle.api.Project
 import org.gradle.api.file.FileSystemLocation
 import org.gradle.api.file.FileSystemLocationProperty
 import org.gradle.api.provider.Provider
-import xyz.jpenilla.runpaper.Constants
 import java.nio.file.Path
 
 internal val FileSystemLocationProperty<*>.path: Path
