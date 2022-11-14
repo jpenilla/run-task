@@ -44,7 +44,6 @@ public abstract class RunVelocityPlugin : RunPlugin() {
       group = Constants.RUN_VELOCITY_TASK_GROUP
       description = "Run a Velocity server for plugin testing."
     }
-
-    target.setupPluginJarDetection(runVelocity, runExtension)
+    runVelocity.setupPluginJarDetection(target, runExtension)
   }
 }
