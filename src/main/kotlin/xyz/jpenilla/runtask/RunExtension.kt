@@ -23,7 +23,7 @@ import xyz.jpenilla.runtask.task.AbstractRun
 
 public abstract class RunExtension(project: Project) {
   /**
-   * By default, Run Paper/Velocity will attempt to discover your plugin `jar` or `shadowJar` and automatically
+   * By default, Run Paper/Velocity/Waterfall will attempt to discover your plugin `jar` or `shadowJar` and automatically
    * add it to the [AbstractRun.pluginJars] file collection. In some configurations, this behavior may not be desired,
    * and therefore this option exists to disable it.
    *
