@@ -1,6 +1,6 @@
 # Run <Paper|Velocity|Waterfall>
 
-[![build](https://img.shields.io/github/checks-status/jpenilla/run-paper/master?label=build)](https://github.com/jpenilla/run-paper/actions) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![build](https://img.shields.io/github/checks-status/jpenilla/run-task/master?label=build)](https://github.com/jpenilla/run-task/actions) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 This repository houses a suite of plugins which add tasks to automatically download and run Minecraft server/proxy
 software along with your plugin built by Gradle. This provides a streamlined method of integration testing plugins.
@@ -89,4 +89,4 @@ tasks {
 You can now run a Waterfall proxy simply by invoking the `runWaterfall` task!
 </details>
 
-Check out [the wiki](https://github.com/jpenilla/run-paper/wiki) for more detailed usage information.
+Check out [the wiki](https://github.com/jpenilla/run-task/wiki) for more detailed usage information.
