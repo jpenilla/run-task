@@ -10,8 +10,8 @@ plugins {
 }
 
 group = "xyz.jpenilla"
-version = "1.1.1-SNAPSHOT"
-description = "Gradle plugin adding a task to run a Paper Minecraft server"
+version = "2.0.0-SNAPSHOT"
+description = "Gradle plugins adding run tasks for Minecraft server and proxy software"
 
 repositories {
   mavenCentral()
@@ -68,12 +68,19 @@ license {
 }
 
 indraPluginPublishing {
+  website("https://github.com/jpenilla/run-paper")
   plugin(
     "run-paper",
-    "xyz.jpenilla.runpaper.RunPaper",
+    "xyz.jpenilla.runpaper.RunPaperPlugin",
     "Run Paper",
-    project.description,
-    listOf("minecraft", "paper", "run")
+    "Gradle plugin adding a task to run a Paper Minecraft server",
+    listOf("minecraft", "server", "paper", "run")
   )
-  website("https://github.com/jpenilla/run-paper")
+  plugin(
+    "run-velocity",
+    "xyz.jpenilla.runvelocity.RunVelocityPlugin",
+    "Run Velocity",
+    "Gradle plugin adding a task to run a Velocity proxy",
+    listOf("minecraft", "proxy", "velocity", "run")
+  )
 }

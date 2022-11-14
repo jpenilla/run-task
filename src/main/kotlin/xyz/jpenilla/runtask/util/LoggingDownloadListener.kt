@@ -1,5 +1,5 @@
 /*
- * Run Paper Gradle Plugin
+ * Run Task Gradle Plugins
  * Copyright (c) 2021-2022 Jason Penilla
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.jpenilla.runpaper.util
+package xyz.jpenilla.runtask.util
 
 import java.text.DecimalFormat
 import java.time.Duration

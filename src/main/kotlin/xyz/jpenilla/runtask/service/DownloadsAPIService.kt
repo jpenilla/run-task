@@ -1,5 +1,5 @@
 /*
- * Run Paper Gradle Plugin
+ * Run Task Gradle Plugins
  * Copyright (c) 2021-2022 Jason Penilla
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,40 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.jpenilla.runpaper.service
+package xyz.jpenilla.runtask.service
 
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.registerIfAbsent
-import xyz.jpenilla.runpaper.Constants
-import xyz.jpenilla.runpaper.paperapi.DownloadsAPI
-import xyz.jpenilla.runpaper.paperapi.Projects
-import xyz.jpenilla.runpaper.util.set
-import xyz.jpenilla.runpaper.util.sharedCaches
+import xyz.jpenilla.runtask.paperapi.DownloadsAPI
+import xyz.jpenilla.runtask.paperapi.Projects
+import xyz.jpenilla.runtask.util.Constants
+import xyz.jpenilla.runtask.util.set
+import xyz.jpenilla.runtask.util.sharedCaches
 import java.nio.file.Path
 
 /**
- * Service that downloads and caches Paperclip jars.
+ * Service that downloads and caches jars. The included implementation is for the Paper
+ * downloads API v2.
  */
-public interface PaperclipService {
+public interface DownloadsAPIService {
   /**
-   * Resolve a Paperclip.
+   * Resolve a build.
    *
    * @param project project to use for context
-   * @param minecraftVersion minecraft version string
-   * @param paperBuild build to resolve
+   * @param version version string
+   * @param build build to resolve
    */
-  public fun resolvePaperclip(
+  public fun resolveBuild(
     project: Project,
-    minecraftVersion: String,
-    paperBuild: Build
+    version: String,
+    build: Build
   ): Path
 
   public companion object {
     /**
-     * Registers a [PaperclipService] with the provided configuration. If
-     * there is already a [PaperclipService] registered with the configured
+     * Registers a [DownloadsAPIService] with the provided configuration. If
+     * there is already a [DownloadsAPIService] registered with the configured
      * name, it will be returned instead.
      *
      * @param project project
@@ -56,27 +57,20 @@ public interface PaperclipService {
     public fun registerIfAbsent(
       project: Project,
       op: Action<RegistrationBuilder>
-    ): Provider<out PaperclipService> {
-      val builder = object : RegistrationBuilder {
-        override var buildServiceName: String? = null
-        override var downloadsEndpoint: String? = null
-        override var downloadProjectName: String? = null
-        override var downloadProjectDisplayName: String? = null
-      }
+    ): Provider<out DownloadsAPIService> {
+      val builder = RegistrationBuilderImpl()
       op.execute(builder)
       val proj = requireNotNull(builder.downloadProjectName) { "Missing downloadProjectName" }
       val endpoint = requireNotNull(builder.downloadsEndpoint) { "Missing downloadsEndpoint" }
-      val serviceName = builder.buildServiceName ?: "$proj-paperclip_service"
-      return project.gradle.sharedServices.registerIfAbsent(serviceName, PaperclipServiceImpl::class) {
+      val serviceName = builder.buildServiceName ?: "$proj-downloads_api_service"
+      val cacheDir = builder.cacheOverride
+        ?: project.sharedCaches.resolve(Constants.USER_PATH).resolve(serviceName)
+      return project.gradle.sharedServices.registerIfAbsent(serviceName, DownloadsAPIServiceImpl::class) {
         maxParallelUsages.set(1)
         parameters.downloadsEndpoint.set(endpoint)
         parameters.downloadProject.set(proj)
         parameters.downloadProjectDisplayName.set(builder.downloadProjectDisplayName ?: proj.defaultDisplayName())
-        parameters.cacheDirectory.set(
-          project.sharedCaches.resolve(Constants.RUN_PAPER_PATH).run {
-            if (serviceName == Constants.Services.PAPERCLIP) this else resolve(serviceName)
-          }
-        )
+        parameters.cacheDirectory.set(cacheDir)
         parameters.refreshDependencies.set(project.gradle.startParameter.isRefreshDependencies)
         parameters.offlineMode.set(project.gradle.startParameter.isOffline)
       }
@@ -86,19 +80,42 @@ public interface PaperclipService {
       split('-').joinToString(" ") { it.capitalize() }
 
     /**
-     * Get the default [PaperclipService] used to download Paper.
+     * Get the default [DownloadsAPIService] used to download Paper.
      *
      * @param project project
      */
-    public fun paper(project: Project): Provider<out PaperclipService> = registerIfAbsent(project) {
+    public fun paper(project: Project): Provider<out DownloadsAPIService> = registerIfAbsent(project) {
+      this as RegistrationBuilderImpl
       downloadsEndpoint = DownloadsAPI.PAPER_ENDPOINT
       downloadProjectName = Projects.PAPER
-      buildServiceName = Constants.Services.PAPERCLIP
+      buildServiceName = Constants.Services.PAPER
+      cacheOverride = project.sharedCaches.resolve(Constants.PAPER_PATH)
     }
+
+    /**
+     * Get the default [DownloadsAPIService] used to download Velocity.
+     *
+     * @param project project
+     */
+    public fun velocity(project: Project): Provider<out DownloadsAPIService> = registerIfAbsent(project) {
+      this as RegistrationBuilderImpl
+      downloadsEndpoint = DownloadsAPI.PAPER_ENDPOINT
+      downloadProjectName = Projects.VELOCITY
+      buildServiceName = Constants.Services.VELOCITY
+      cacheOverride = project.sharedCaches.resolve(Constants.VELOCITY_PATH)
+    }
+
+    private class RegistrationBuilderImpl(
+      override var buildServiceName: String? = null,
+      override var downloadsEndpoint: String? = null,
+      override var downloadProjectName: String? = null,
+      override var downloadProjectDisplayName: String? = null,
+      var cacheOverride: Path? = null
+    ) : RegistrationBuilder
   }
 
   /**
-   * Builder for [PaperclipService] registration.
+   * Builder for [DownloadsAPIService] registration.
    */
   public interface RegistrationBuilder {
     /**
@@ -123,11 +140,11 @@ public interface PaperclipService {
   }
 
   /**
-   * Represents a build of Paper.
+   * Represents a build of a Paper downloads API v2 project.
    */
   public sealed class Build {
     /**
-     * [Build] pointing to the latest Paper build for the configured Minecraft version.
+     * [Build] pointing to the latest build for a version.
      */
     public object Latest : Build()
 
