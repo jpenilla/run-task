@@ -25,7 +25,6 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.withType
 import xyz.jpenilla.runtask.task.AbstractRun
@@ -51,14 +50,15 @@ public abstract class RunPlugin : Plugin<Project> {
     }
   }
 
-  protected fun Project.setupPluginJarDetection(
-    task: TaskProvider<out AbstractRun>,
+  protected fun TaskProvider<out AbstractRun>.setupPluginJarDetection(
+    project: Project,
     extension: RunExtension
   ) {
-    afterEvaluate {
+    project.afterEvaluate {
       if (extension.detectPluginJar.get()) {
-        val jar = findPluginJar(this)
-        task { jar?.let { pluginJars(it) } }
+        findPluginJar(this)?.let {
+          configure { pluginJars(it) }
+        }
       }
     }
   }

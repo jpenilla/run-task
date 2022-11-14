@@ -53,12 +53,11 @@ public abstract class RunPaperPlugin : RunPlugin() {
       group = Constants.RUN_PAPER_TASK_GROUP
       description = "Run a Paper server for plugin testing."
     }
+    runServer.setupPluginJarDetection(target, runExtension)
 
     target.plugins.withId(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) {
       target.setupPaperweightCompat(runServer, runExtension)
     }
-
-    target.setupPluginJarDetection(runServer, runExtension)
   }
 
   override fun findPluginJar(project: Project): Provider<RegularFile>? = when {
