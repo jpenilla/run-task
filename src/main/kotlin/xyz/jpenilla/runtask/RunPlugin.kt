@@ -18,6 +18,7 @@ package xyz.jpenilla.runtask
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.UnknownTaskException
 import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.provider.Provider
@@ -29,7 +30,6 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.withType
 import xyz.jpenilla.runtask.task.AbstractRun
 import xyz.jpenilla.runtask.util.Constants
-import xyz.jpenilla.runtask.util.find
 import xyz.jpenilla.runtask.util.findJavaLauncher
 import xyz.jpenilla.runtask.util.maybeRegister
 import xyz.jpenilla.runtask.util.sharedCaches
@@ -41,7 +41,7 @@ public abstract class RunPlugin : Plugin<Project> {
   }
 
   private fun javaLauncherConvention(target: Project) {
-    target.plugins.withId("java") {
+    target.afterEvaluate {
       // Use the configured Java toolchain if present
       target.findJavaLauncher()?.let { launcher ->
         target.tasks.withType<AbstractRun>().configureEach {

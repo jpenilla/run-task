@@ -16,7 +16,6 @@
  */
 package xyz.jpenilla.runtask.util
 
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.UnknownTaskException
@@ -29,9 +28,6 @@ import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
-
-internal inline fun <reified T> NamedDomainObjectContainer<*>.find(name: String): T? =
-  findByName(name) as? T
 
 internal fun Project.findJavaLauncher(): Provider<JavaLauncher>? {
   val service = project.extensions.findByType<JavaToolchainService>() ?: return null
