@@ -49,7 +49,7 @@ tasks {
 
 indra {
   apache2License()
-  github("jpenilla", "run-paper")
+  github("jpenilla", "run-task")
   publishSnapshotsTo("jmp", "https://repo.jpenilla.xyz/snapshots")
   configurePublications {
     pom {
@@ -71,7 +71,7 @@ fun tags(vararg extra: String): List<String> =
   listOf("minecraft", "papermc", "run", *extra)
 
 indraPluginPublishing {
-  website("https://github.com/jpenilla/run-paper")
+  website("https://github.com/jpenilla/run-task")
   plugin(
     "run-paper",
     "xyz.jpenilla.runpaper.RunPaperPlugin",
