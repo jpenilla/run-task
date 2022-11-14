@@ -76,6 +76,12 @@ public abstract class RunPlugin : Plugin<Project> {
       project.tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
     }
 
-    else -> project.tasks.find<AbstractArchiveTask>(JavaPlugin.JAR_TASK_NAME)?.archiveFile
+    else -> {
+      try {
+        project.tasks.named<AbstractArchiveTask>(JavaPlugin.JAR_TASK_NAME).flatMap { it.archiveFile }
+      } catch (ex: UnknownTaskException) {
+        null
+      }
+    }
   }
 }
