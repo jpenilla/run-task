@@ -67,6 +67,9 @@ license {
   header(file("LICENSE_HEADER"))
 }
 
+fun tags(vararg extra: String): List<String> =
+  listOf("minecraft", "papermc", "run", *extra)
+
 indraPluginPublishing {
   website("https://github.com/jpenilla/run-paper")
   plugin(
@@ -74,13 +77,20 @@ indraPluginPublishing {
     "xyz.jpenilla.runpaper.RunPaperPlugin",
     "Run Paper",
     "Gradle plugin adding a task to run a Paper Minecraft server",
-    listOf("minecraft", "server", "paper", "run")
+    tags("paper", "server")
   )
   plugin(
     "run-velocity",
     "xyz.jpenilla.runvelocity.RunVelocityPlugin",
     "Run Velocity",
     "Gradle plugin adding a task to run a Velocity proxy",
-    listOf("minecraft", "proxy", "velocity", "run")
+    tags("velocity", "proxy")
+  )
+  plugin(
+    "run-waterfall",
+    "xyz.jpenilla.runwaterfall.RunWaterfallPlugin",
+    "Run Waterfall",
+    "Gradle plugin adding a task to run a Waterfall proxy",
+    tags("waterfall", "proxy")
   )
 }

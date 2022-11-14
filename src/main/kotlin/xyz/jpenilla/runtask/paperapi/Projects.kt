@@ -19,4 +19,5 @@ package xyz.jpenilla.runtask.paperapi
 internal object Projects {
   const val PAPER: String = "paper"
   const val VELOCITY: String = "velocity"
+  const val WATERFALL: String = "waterfall"
 }

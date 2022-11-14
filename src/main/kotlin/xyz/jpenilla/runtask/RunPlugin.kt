@@ -35,7 +35,7 @@ import xyz.jpenilla.runtask.util.sharedCaches
 
 public abstract class RunPlugin : Plugin<Project> {
   override fun apply(target: Project) {
-    target.registerCleanUserCachesTask()
+    target.registerSharedCleanTasks()
     javaLauncherConvention(target)
   }
 
@@ -63,11 +63,17 @@ public abstract class RunPlugin : Plugin<Project> {
     }
   }
 
-  private fun Project.registerCleanUserCachesTask() {
+  private fun Project.registerSharedCleanTasks() {
     tasks.maybeRegister<Delete>(Constants.Tasks.CLEAN_USER_SERVICES_CACHE) {
       group = Constants.SHARED_TASK_GROUP
       description = "Delete all locally cached jars for custom downloads API service registrations."
       delete(sharedCaches.resolve(Constants.USER_PATH))
+    }
+    tasks.maybeRegister<Delete>(Constants.Tasks.CLEAN_ALL_CACHES) {
+      group = Constants.SHARED_TASK_GROUP
+      description = "Delete all locally cached jars for run tasks. " +
+        "Roughly equivalent to running '${Constants.Tasks.CLEAN_USER_SERVICES_CACHE} ${Constants.Tasks.CLEAN_PAPERCLIP_CACHE} ${Constants.Tasks.CLEAN_VELOCITY_CACHE} ${Constants.Tasks.CLEAN_WATERFALL_CACHE}'."
+      delete(sharedCaches.resolve(Constants.RUN_PATH))
     }
   }
 

@@ -105,6 +105,19 @@ public interface DownloadsAPIService {
       cacheOverride = project.sharedCaches.resolve(Constants.VELOCITY_PATH)
     }
 
+    /**
+     * Get the default [DownloadsAPIService] used to download Waterfall.
+     *
+     * @param project project
+     */
+    public fun waterfall(project: Project): Provider<out DownloadsAPIService> = registerIfAbsent(project) {
+      this as RegistrationBuilderImpl
+      downloadsEndpoint = DownloadsAPI.PAPER_ENDPOINT
+      downloadProjectName = Projects.WATERFALL
+      buildServiceName = Constants.Services.WATERFALL
+      cacheOverride = project.sharedCaches.resolve(Constants.WATERFALL_PATH)
+    }
+
     private class RegistrationBuilderImpl(
       override var buildServiceName: String? = null,
       override var downloadsEndpoint: String? = null,
