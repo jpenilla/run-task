@@ -17,14 +17,14 @@
 package xyz.jpenilla.runvelocity.task
 
 import xyz.jpenilla.runtask.service.DownloadsAPIService
-import xyz.jpenilla.runtask.task.AbstractRun
+import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
 import java.nio.file.Path
 
 /**
  * Task to download and run a Velocity server along with plugins.
  */
-public abstract class RunVelocity : AbstractRun() {
+public abstract class RunVelocity : RunWithPlugins() {
   override fun init() {
     downloadsApiService.convention(DownloadsAPIService.velocity(project))
     displayName.convention("Velocity")

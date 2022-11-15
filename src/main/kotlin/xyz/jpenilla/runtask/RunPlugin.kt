@@ -28,6 +28,7 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.withType
 import xyz.jpenilla.runtask.task.AbstractRun
+import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.findJavaLauncher
 import xyz.jpenilla.runtask.util.maybeRegister
@@ -50,7 +51,7 @@ public abstract class RunPlugin : Plugin<Project> {
     }
   }
 
-  protected fun TaskProvider<out AbstractRun>.setupPluginJarDetection(
+  protected fun TaskProvider<out RunWithPlugins>.setupPluginJarDetection(
     project: Project,
     extension: RunExtension
   ) {

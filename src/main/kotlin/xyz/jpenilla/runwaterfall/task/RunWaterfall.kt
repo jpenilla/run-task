@@ -17,14 +17,14 @@
 package xyz.jpenilla.runwaterfall.task
 
 import xyz.jpenilla.runtask.service.DownloadsAPIService
-import xyz.jpenilla.runtask.task.AbstractRun
+import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
 import java.nio.file.Path
 
 /**
  * Task to download and run a Waterfall server along with plugins.
  */
-public abstract class RunWaterfall : AbstractRun() {
+public abstract class RunWaterfall : RunWithPlugins() {
   override fun init() {
     downloadsApiService.convention(DownloadsAPIService.waterfall(project))
     displayName.convention("Waterfall")

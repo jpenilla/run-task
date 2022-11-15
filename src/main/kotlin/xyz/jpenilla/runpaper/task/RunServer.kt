@@ -22,7 +22,7 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import xyz.jpenilla.runtask.service.DownloadsAPIService
-import xyz.jpenilla.runtask.task.AbstractRun
+import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
 import java.io.File
 import java.nio.file.Path
@@ -32,7 +32,7 @@ import java.nio.file.Path
  *
  * Note that configuring [version] is required for this task type.
  */
-public abstract class RunServer : AbstractRun() {
+public abstract class RunServer : RunWithPlugins() {
   /**
    * Run Paper makes use of Paper's `add-plugin` command line option in order to
    * load the files in [pluginJars] as plugins. This option was implemented during

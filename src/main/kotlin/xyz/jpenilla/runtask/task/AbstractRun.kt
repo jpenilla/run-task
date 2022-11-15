@@ -27,7 +27,6 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Optional
-import xyz.jpenilla.runtask.RunExtension
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.util.path
 import java.io.File
@@ -85,14 +84,6 @@ public abstract class AbstractRun : JavaExec() {
    */
   @get:Internal
   public abstract val runDirectory: DirectoryProperty
-
-  /**
-   * The collection of plugin jars to load.
-   *
-   * @see [RunExtension.detectPluginJar]
-   */
-  @get:Classpath
-  public abstract val pluginJars: ConfigurableFileCollection
 
   @get:Inject
   protected abstract val layout: ProjectLayout
@@ -200,23 +191,5 @@ public abstract class AbstractRun : JavaExec() {
    */
   public fun runDirectory(directory: File) {
     runDirectory.set(directory)
-  }
-
-  /**
-   * Convenience method for easily adding jars to [pluginJars].
-   *
-   * @param jars jars to add
-   */
-  public fun pluginJars(vararg jars: File) {
-    pluginJars.from(jars)
-  }
-
-  /**
-   * Convenience method for easily adding jars to [pluginJars].
-   *
-   * @param jars jars to add
-   */
-  public fun pluginJars(vararg jars: Provider<RegularFile>) {
-    pluginJars.from(jars)
   }
 }
