@@ -42,8 +42,8 @@ private val UNITS = mapOf(
  */
 @Throws(InvalidDurationException::class)
 internal fun parseDuration(input: String): Duration {
-  if (input.trim().isEmpty()) {
-    throw InvalidDurationException.noInput()
+  if (input.isBlank()) {
+    throw InvalidDurationException.noInput(input)
   }
   if (input.length < 2) {
     throw InvalidDurationException.invalidInput(input)
@@ -72,8 +72,8 @@ internal class InvalidDurationException private constructor(
       Example input strings: ["1d", "12h", "1m", "30s"]
     """.trimIndent()
 
-    fun noInput(): InvalidDurationException =
-      InvalidDurationException("Cannot parse a Duration from an empty input string.\n$infoMessage")
+    fun noInput(input: String): InvalidDurationException =
+      InvalidDurationException("Cannot parse a Duration from a blank input string '$input'.\n$infoMessage")
 
     fun invalidInput(input: String, cause: Throwable? = null) =
       InvalidDurationException("Cannot parse a Duration from input '$input'.\n$infoMessage", cause)
