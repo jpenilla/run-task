@@ -35,6 +35,8 @@ public interface DownloadsAPIService {
   /**
    * Resolve a build.
    *
+   * This method should be thread safe.
+   *
    * @param project project to use for context
    * @param version version string
    * @param build build to resolve
@@ -66,7 +68,6 @@ public interface DownloadsAPIService {
       val cacheDir = builder.cacheOverride
         ?: project.sharedCaches.resolve(Constants.USER_PATH).resolve(serviceName)
       return project.gradle.sharedServices.registerIfAbsent(serviceName, DownloadsAPIServiceImpl::class) {
-        maxParallelUsages.set(1)
         parameters.downloadsEndpoint.set(endpoint)
         parameters.downloadProject.set(proj)
         parameters.downloadProjectDisplayName.set(builder.downloadProjectDisplayName ?: proj.defaultDisplayName())
