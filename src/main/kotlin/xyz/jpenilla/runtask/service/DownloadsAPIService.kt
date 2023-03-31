@@ -68,12 +68,14 @@ public interface DownloadsAPIService {
       val cacheDir = builder.cacheOverride
         ?: project.sharedCaches.resolve(Constants.USER_PATH).resolve(serviceName)
       return project.gradle.sharedServices.registerIfAbsent(serviceName, DownloadsAPIServiceImpl::class) {
-        parameters.downloadsEndpoint.set(endpoint)
-        parameters.downloadProject.set(proj)
-        parameters.downloadProjectDisplayName.set(builder.downloadProjectDisplayName ?: proj.defaultDisplayName())
-        parameters.cacheDirectory.set(cacheDir)
-        parameters.refreshDependencies.set(project.gradle.startParameter.isRefreshDependencies)
-        parameters.offlineMode.set(project.gradle.startParameter.isOffline)
+        parameters {
+          downloadsEndpoint.set(endpoint)
+          downloadProject.set(proj)
+          downloadProjectDisplayName.set(builder.downloadProjectDisplayName ?: proj.defaultDisplayName())
+          cacheDirectory.set(cacheDir)
+          refreshDependencies.set(project.gradle.startParameter.isRefreshDependencies)
+          offlineMode.set(project.gradle.startParameter.isOffline)
+        }
       }
     }
 
@@ -91,6 +93,19 @@ public interface DownloadsAPIService {
       downloadProjectName = Projects.PAPER
       buildServiceName = Constants.Services.PAPER
       cacheOverride = project.sharedCaches.resolve(Constants.PAPER_PATH)
+    }
+
+    /**
+     * Get the default [DownloadsAPIService] used to download Folia.
+     *
+     * @param project project
+     */
+    public fun folia(project: Project): Provider<out DownloadsAPIService> = registerIfAbsent(project) {
+      this as RegistrationBuilderImpl
+      downloadsEndpoint = DownloadsAPI.PAPER_ENDPOINT
+      downloadProjectName = Projects.FOLIA
+      buildServiceName = Constants.Services.FOLIA
+      cacheOverride = project.sharedCaches.resolve(Constants.FOLIA_PATH)
     }
 
     /**

@@ -26,6 +26,7 @@ internal object Constants {
   const val RUN_PATH = "run-task-jars"
   const val USER_PATH = "$RUN_PATH/user"
   const val PAPER_PATH = "$RUN_PATH/paper"
+  const val FOLIA_PATH = "$RUN_PATH/folia"
   const val VELOCITY_PATH = "$RUN_PATH/velocity"
   const val WATERFALL_PATH = "$RUN_PATH/waterfall"
 
@@ -52,6 +53,7 @@ internal object Constants {
 
   object Services {
     const val PAPER = "paper-download-service"
+    const val FOLIA = "folia-download-service"
     const val VELOCITY = "velocity-download-service"
     const val WATERFALL = "waterfall-download-service"
   }

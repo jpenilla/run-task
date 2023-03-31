@@ -24,7 +24,7 @@ import java.net.URL
 
 internal class DownloadsAPI(private val endpoint: String) {
   companion object {
-    const val PAPER_ENDPOINT: String = "https://papermc.io/api/v2/"
+    const val PAPER_ENDPOINT: String = "https://api.papermc.io/v2/"
     private val MAPPER: JsonMapper = JsonMapper.builder()
       .addModule(kotlinModule())
       .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
