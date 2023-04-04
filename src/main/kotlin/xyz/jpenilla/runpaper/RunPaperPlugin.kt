@@ -20,6 +20,7 @@ import io.papermc.paperweight.tasks.RemapJar
 import io.papermc.paperweight.userdev.PaperweightUserExtension
 import io.papermc.paperweight.util.constants.MOJANG_MAPPED_SERVER_RUNTIME_CONFIG
 import org.gradle.api.Project
+import org.gradle.api.UnknownTaskException
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Delete
@@ -40,7 +41,7 @@ public abstract class RunPaperPlugin : RunPlugin() {
   override fun apply(target: Project) {
     super.apply(target)
 
-    val runExtension = target.extensions.create<RunExtension>(Constants.Extensions.RUN_PAPER, target)
+    val runExtension = target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
     DownloadsAPIService.paper(target)
 
     target.tasks.register<Delete>(Constants.Tasks.CLEAN_PAPERCLIP_CACHE) {
@@ -57,6 +58,26 @@ public abstract class RunPaperPlugin : RunPlugin() {
 
     target.plugins.withId(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) {
       target.setupPaperweightCompat(runServer, runExtension)
+    }
+
+    target.afterEvaluate {
+      val task = try {
+        runExtension.folia.task()
+      } catch (ex: UnknownTaskException) {
+        return@afterEvaluate
+      }
+      when (runExtension.folia.pluginsMode.get()) {
+        RunPaperExtension.Folia.PluginsMode.INHERIT_ALL -> {
+          task.configure {
+            pluginJars.from(runServer.map { it.pluginJars })
+          }
+        }
+        RunPaperExtension.Folia.PluginsMode.INHERIT_NONE -> {}
+        RunPaperExtension.Folia.PluginsMode.PLUGIN_JAR_DETECTION -> task.setupPluginJarDetection(this, runExtension, false)
+      }
+      task.configure {
+        version.convention(runServer.flatMap { it.version })
+      }
     }
   }
 

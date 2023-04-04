@@ -53,14 +53,20 @@ public abstract class RunPlugin : Plugin<Project> {
 
   protected fun TaskProvider<out RunWithPlugins>.setupPluginJarDetection(
     project: Project,
-    extension: RunExtension
+    extension: RunExtension,
+    scheduleForAfterEvaluate: Boolean = true
   ) {
-    project.afterEvaluate {
+    val action = {
       if (extension.detectPluginJar.get()) {
-        findPluginJar(this)?.let {
+        findPluginJar(project)?.let {
           configure { pluginJars(it) }
         }
       }
+    }
+    if (scheduleForAfterEvaluate) {
+      project.afterEvaluate { action() }
+    } else {
+      action()
     }
   }
 

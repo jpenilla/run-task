@@ -46,6 +46,7 @@ internal object Constants {
     const val CLEAN_ALL_CACHES = "cleanAllRunTaskCaches"
 
     const val RUN_SERVER = "runServer"
+    const val RUN_FOLIA = "runFolia"
     const val RUN_MOJANG_MAPPED_SERVER = "runMojangMappedServer"
     const val RUN_VELOCITY = "runVelocity"
     const val RUN_WATERFALL = "runWaterfall"

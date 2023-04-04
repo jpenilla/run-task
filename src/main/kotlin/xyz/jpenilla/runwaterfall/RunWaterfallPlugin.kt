@@ -31,7 +31,7 @@ public abstract class RunWaterfallPlugin : RunPlugin() {
   override fun apply(target: Project) {
     super.apply(target)
 
-    val runExtension = target.extensions.create<RunExtension>(Constants.Extensions.RUN_WATERFALL, target)
+    val runExtension = target.extensions.create<RunExtension>(Constants.Extensions.RUN_WATERFALL)
     DownloadsAPIService.waterfall(target)
 
     target.tasks.register<Delete>(Constants.Tasks.CLEAN_WATERFALL_CACHE) {

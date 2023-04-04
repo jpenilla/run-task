@@ -16,12 +16,13 @@
  */
 package xyz.jpenilla.runtask
 
-import org.gradle.api.Project
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.kotlin.dsl.property
 import xyz.jpenilla.runtask.task.AbstractRun
+import javax.inject.Inject
 
-public abstract class RunExtension(project: Project) {
+public abstract class RunExtension @Inject constructor(objects: ObjectFactory) {
   /**
    * By default, Run Paper/Velocity/Waterfall will attempt to discover your plugin `jar` or `shadowJar` and automatically
    * add it to the [AbstractRun.pluginJars] file collection. In some configurations, this behavior may not be desired,
@@ -30,7 +31,7 @@ public abstract class RunExtension(project: Project) {
    * Note that the plugin jar discovery behavior is only applicable for the automatically registered default run
    * task, if you create your own [AbstractRun]s you will need to manually add plugin jars regardless.
    */
-  public val detectPluginJar: Property<Boolean> = project.objects.property<Boolean>().convention(true)
+  public val detectPluginJar: Property<Boolean> = objects.property<Boolean>().convention(true)
 
   /**
    * Configures [detectPluginJar] to false.

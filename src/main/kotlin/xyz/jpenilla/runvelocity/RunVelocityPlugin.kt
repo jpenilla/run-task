@@ -31,7 +31,7 @@ public abstract class RunVelocityPlugin : RunPlugin() {
   override fun apply(target: Project) {
     super.apply(target)
 
-    val runExtension = target.extensions.create<RunExtension>(Constants.Extensions.RUN_VELOCITY, target)
+    val runExtension = target.extensions.create<RunExtension>(Constants.Extensions.RUN_VELOCITY)
     DownloadsAPIService.velocity(target)
 
     target.tasks.register<Delete>(Constants.Tasks.CLEAN_VELOCITY_CACHE) {
