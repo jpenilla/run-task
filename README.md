@@ -1,6 +1,6 @@
 # Run <Paper|Velocity|Waterfall>
 
-[![build](https://img.shields.io/github/checks-status/jpenilla/run-task/master?label=build)](https://github.com/jpenilla/run-task/actions) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![build](https://img.shields.io/github/actions/workflow/status/jpenilla/run-task/build.yml?branch=master)](https://github.com/jpenilla/run-task/actions) [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 This repository houses a suite of plugins which add tasks to automatically download and run Minecraft server/proxy
 software along with your plugin built by Gradle. This provides a streamlined method of integration testing plugins.
@@ -17,7 +17,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-paper") version "2.0.0"
+  id("xyz.jpenilla.run-paper") version "2.1.0"
 }
 
 tasks {
@@ -45,7 +45,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-velocity") version "2.0.0"
+  id("xyz.jpenilla.run-velocity") version "2.1.0"
 }
 
 tasks {
@@ -73,7 +73,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-waterfall") version "2.0.0"
+  id("xyz.jpenilla.run-waterfall") version "2.1.0"
 }
 
 tasks {
