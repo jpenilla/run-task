@@ -16,6 +16,7 @@
  */
 package xyz.jpenilla.runtask.task
 
+import groovy.lang.Closure
 import org.gradle.api.Action
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFile
@@ -102,7 +103,13 @@ public abstract class RunWithPlugins : AbstractRun() {
     pluginJars.from(jars)
   }
 
-  public fun downloadPlugins(config: Action<in DownloadPluginsSpec>) {
+  public fun downloadPlugins(config: Action<DownloadPluginsSpec>) {
     config.execute(downloadPlugins)
+  }
+
+  // For groovy
+  public fun downloadPlugins(config: Closure<DownloadPluginsSpec>) {
+    config.delegate = downloadPlugins
+    config.run()
   }
 }
