@@ -16,6 +16,7 @@
  */
 package xyz.jpenilla.runtask
 
+import groovy.lang.Closure
 import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
@@ -49,9 +50,17 @@ public abstract class RunExtension @Inject constructor(private val objects: Obje
     return objects.newInstance(DownloadPluginsSpec::class, objects.polymorphicDomainObjectContainer(PluginApi::class))
   }
 
-  public fun downloadPluginsSpec(config: Action<in DownloadPluginsSpec>): DownloadPluginsSpec {
+  public fun downloadPluginsSpec(config: Action<DownloadPluginsSpec>): DownloadPluginsSpec {
     val spec = downloadPluginsSpec()
     config.execute(spec)
+    return spec
+  }
+
+  // For groovy
+  public fun downloadPluginsSpec(config: Closure<DownloadPluginsSpec>): DownloadPluginsSpec {
+    val spec = downloadPluginsSpec()
+    config.delegate = spec
+    config.run()
     return spec
   }
 }
