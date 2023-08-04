@@ -29,6 +29,14 @@ internal object Constants {
   const val FOLIA_PATH = "$RUN_PATH/folia"
   const val VELOCITY_PATH = "$RUN_PATH/velocity"
   const val WATERFALL_PATH = "$RUN_PATH/waterfall"
+  const val PAPER_PLUGINS_PATH = "$PAPER_PATH/plugins"
+  const val FOLIA_PLUGINS_PATH = "$FOLIA_PATH/plugins"
+  const val VELOCITY_PLUGINS_PATH = "$VELOCITY_PATH/plugins"
+  const val WATERFALL_PLUGINS_PATH = "$WATERFALL_PATH/plugins"
+
+  const val HANGAR_PLUGIN_DIR = "hangar"
+  const val MODRINTH_PLUGIN_DIR = "modrinth"
+  const val GITHUB_PLUGIN_DIR = "github"
 
   object Plugins {
     const val SHADOW_PLUGIN_ID = "com.github.johnrengelman.shadow"
@@ -39,11 +47,17 @@ internal object Constants {
   }
 
   object Tasks {
-    const val CLEAN_PAPERCLIP_CACHE = "cleanPaperclipCache"
+    const val CLEAN_PAPER_CACHE = "cleanPaperCache"
+    const val CLEAN_FOLIA_CACHE = "cleanFoliaCache"
     const val CLEAN_VELOCITY_CACHE = "cleanVelocityCache"
     const val CLEAN_WATERFALL_CACHE = "cleanWaterfallCache"
     const val CLEAN_USER_SERVICES_CACHE = "cleanCustomServiceCaches"
     const val CLEAN_ALL_CACHES = "cleanAllRunTaskCaches"
+
+    const val CLEAN_PAPER_PLUGINS_CACHE = "cleanPaperPluginsCache"
+    const val CLEAN_FOLIA_PLUGINS_CACHE = "cleanFoliaPluginsCache"
+    const val CLEAN_VELOCITY_PLUGINS_CACHE = "cleanVelocityPluginsCache"
+    const val CLEAN_WATERFALL_PLUGINS_CACHE = "cleanWaterfallPluginsCache"
 
     const val RUN_SERVER = "runServer"
     const val RUN_FOLIA = "runFolia"

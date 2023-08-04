@@ -16,9 +16,11 @@
  */
 package xyz.jpenilla.runtask.util
 
+import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
+import org.gradle.api.NamedDomainObjectProvider
+import org.gradle.api.PolymorphicDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.UnknownTaskException
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
@@ -28,6 +30,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import kotlin.reflect.KClass
 
 internal fun Project.findJavaLauncher(): Provider<JavaLauncher>? {
   val service = project.extensions.findByType<JavaToolchainService>() ?: return null
@@ -39,8 +42,20 @@ internal fun Project.findJavaLauncher(): Provider<JavaLauncher>? {
 internal inline fun <reified T : Task> TaskContainer.maybeRegister(
   taskName: String,
   noinline configuration: T.() -> Unit
-): TaskProvider<T> = try {
+): TaskProvider<T> = if (taskName in names) {
   named<T>(taskName)
-} catch (ex: UnknownTaskException) {
+} else {
   register(taskName, configuration)
 }
+
+internal fun <T : Any, U : T> PolymorphicDomainObjectContainer<T>.configure(
+  name: String,
+  type: KClass<U>,
+  configuration: U.() -> Unit
+): NamedDomainObjectProvider<U> = if (name in names) {
+  named(name, type, configuration)
+} else {
+  register(name, type, configuration)
+}
+
+internal fun <T : Any, U : T> ExtensiblePolymorphicDomainObjectContainer<T>.registerFactory(type: KClass<U>, config: (String) -> U): Unit = registerFactory(type.java, config)

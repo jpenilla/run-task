@@ -79,7 +79,7 @@ public abstract class RunPlugin : Plugin<Project> {
     tasks.maybeRegister<Delete>(Constants.Tasks.CLEAN_ALL_CACHES) {
       group = Constants.SHARED_TASK_GROUP
       description = "Delete all locally cached jars for run tasks. " +
-        "Roughly equivalent to running '${Constants.Tasks.CLEAN_USER_SERVICES_CACHE} ${Constants.Tasks.CLEAN_PAPERCLIP_CACHE} ${Constants.Tasks.CLEAN_VELOCITY_CACHE} ${Constants.Tasks.CLEAN_WATERFALL_CACHE}'."
+        "Roughly equivalent to running '${Constants.Tasks.CLEAN_USER_SERVICES_CACHE} ${Constants.Tasks.CLEAN_PAPER_CACHE} ${Constants.Tasks.CLEAN_FOLIA_CACHE} ${Constants.Tasks.CLEAN_VELOCITY_CACHE} ${Constants.Tasks.CLEAN_WATERFALL_CACHE}'."
       delete(sharedCaches.resolve(Constants.RUN_PATH))
     }
   }

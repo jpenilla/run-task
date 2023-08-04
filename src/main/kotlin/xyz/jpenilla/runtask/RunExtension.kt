@@ -16,13 +16,18 @@
  */
 package xyz.jpenilla.runtask
 
+import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.kotlin.dsl.newInstance
+import org.gradle.kotlin.dsl.polymorphicDomainObjectContainer
 import org.gradle.kotlin.dsl.property
+import xyz.jpenilla.runtask.pluginsapi.DownloadPluginsSpec
+import xyz.jpenilla.runtask.pluginsapi.PluginApi
 import xyz.jpenilla.runtask.task.AbstractRun
 import javax.inject.Inject
 
-public abstract class RunExtension @Inject constructor(objects: ObjectFactory) {
+public abstract class RunExtension @Inject constructor(private val objects: ObjectFactory) {
   /**
    * By default, Run Paper/Velocity/Waterfall will attempt to discover your plugin `jar` or `shadowJar` and automatically
    * add it to the [AbstractRun.pluginJars] file collection. In some configurations, this behavior may not be desired,
@@ -38,5 +43,15 @@ public abstract class RunExtension @Inject constructor(objects: ObjectFactory) {
    */
   public fun disablePluginJarDetection() {
     detectPluginJar.set(false)
+  }
+
+  public fun downloadPluginsSpec(): DownloadPluginsSpec {
+    return objects.newInstance(DownloadPluginsSpec::class, objects.polymorphicDomainObjectContainer(PluginApi::class))
+  }
+
+  public fun downloadPluginsSpec(config: Action<in DownloadPluginsSpec>): DownloadPluginsSpec {
+    val spec = downloadPluginsSpec()
+    config.execute(spec)
+    return spec
   }
 }
