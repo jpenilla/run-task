@@ -44,10 +44,16 @@ public abstract class RunPaperPlugin : RunPlugin() {
     val runExtension = target.extensions.create<RunPaperExtension>(Constants.Extensions.RUN_PAPER, target)
     DownloadsAPIService.paper(target)
 
-    target.tasks.register<Delete>(Constants.Tasks.CLEAN_PAPERCLIP_CACHE) {
+    target.tasks.register<Delete>(Constants.Tasks.CLEAN_PAPER_CACHE) {
       group = Constants.RUN_PAPER_TASK_GROUP
       description = "Delete all locally cached Paper jars."
       delete(target.sharedCaches.resolve(Constants.PAPER_PATH))
+    }
+
+    target.tasks.register<Delete>(Constants.Tasks.CLEAN_PAPER_PLUGINS_CACHE) {
+      group = Constants.RUN_PAPER_TASK_GROUP
+      description = "Delete all locally cached Paper plugin jars."
+      delete(target.sharedCaches.resolve(Constants.PAPER_PLUGINS_PATH))
     }
 
     val runServer = target.tasks.register<RunServer>(Constants.Tasks.RUN_SERVER) {

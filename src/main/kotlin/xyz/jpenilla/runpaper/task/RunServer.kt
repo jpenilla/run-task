@@ -21,6 +21,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
+import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
@@ -51,14 +52,19 @@ public abstract class RunServer : RunWithPlugins() {
   public abstract val legacyPluginLoading: Property<Boolean>
 
   override fun init() {
+    super.init()
+
     // Set disable watchdog property for debugging
     systemProperty("disable.watchdog", true)
 
     downloadsApiService.convention(DownloadsAPIService.paper(project))
+    pluginDownloadService.convention(PluginDownloadService.paper(project))
     displayName.convention("Paper")
   }
 
   override fun preExec(workingDir: Path) {
+    super.preExec(workingDir)
+
     if (!version.isPresent) {
       error("No Minecraft version was specified for the '$name' task!")
     }
@@ -79,9 +85,9 @@ public abstract class RunServer : RunWithPlugins() {
       // Delete any jars left over from previous legacy mode runs, even if we are not currently in legacy mode
       copyingHandler.deleteOldPlugins(pluginsDir)
 
-      args(pluginJars.files.map { "-add-plugin=${it.absolutePath}" })
+      args(ourPluginJars.files.map { "-add-plugin=${it.absolutePath}" })
     } else {
-      copyingHandler.setupPlugins(pluginsDir, pluginJars)
+      copyingHandler.setupPlugins(pluginsDir, ourPluginJars)
     }
   }
 

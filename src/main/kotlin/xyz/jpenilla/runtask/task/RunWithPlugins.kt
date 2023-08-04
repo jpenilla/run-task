@@ -16,12 +16,23 @@
  */
 package xyz.jpenilla.runtask.task
 
+import org.gradle.api.Action
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFile
+import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Classpath
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Nested
+import org.gradle.kotlin.dsl.newInstance
+import org.gradle.kotlin.dsl.polymorphicDomainObjectContainer
 import xyz.jpenilla.runtask.RunExtension
-import java.io.File
+import xyz.jpenilla.runtask.pluginsapi.DownloadPluginsSpec
+import xyz.jpenilla.runtask.pluginsapi.PluginApi
+import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
+import java.nio.file.Path
+import javax.inject.Inject
 
 /**
  * Base task for runs which load a collection of plugin jars.
@@ -40,12 +51,45 @@ public abstract class RunWithPlugins : AbstractRun() {
   @get:Classpath
   public abstract val pluginJars: ConfigurableFileCollection
 
+  @get:Nested
+  public lateinit var downloadPlugins: DownloadPluginsSpec
+    private set
+
+  @get:Internal
+  public abstract val pluginDownloadService: Property<PluginDownloadService>
+
+  @get:Inject
+  protected abstract val objects: ObjectFactory
+
+  // not tracked by inputs/outputs so won't be finalized automatically like `pluginJars` will
+  @get:Internal
+  protected lateinit var ourPluginJars: ConfigurableFileCollection
+    private set
+
+  override fun init() {
+    super.init()
+
+    downloadPlugins = objects.newInstance(DownloadPluginsSpec::class, objects.polymorphicDomainObjectContainer(PluginApi::class))
+    ourPluginJars = objects.fileCollection()
+  }
+
+  override fun preExec(workingDir: Path) {
+    super.preExec(workingDir)
+
+    ourPluginJars.from(pluginJars)
+
+    val service = pluginDownloadService.get()
+    for (download in downloadPlugins.downloads) {
+      ourPluginJars.from(service.resolvePlugin(project, download))
+    }
+  }
+
   /**
    * Convenience method for easily adding jars to [pluginJars].
    *
    * @param jars jars to add
    */
-  public fun pluginJars(vararg jars: File) {
+  public fun pluginJars(vararg jars: Any) {
     pluginJars.from(jars)
   }
 
@@ -56,5 +100,9 @@ public abstract class RunWithPlugins : AbstractRun() {
    */
   public fun pluginJars(vararg jars: Provider<RegularFile>) {
     pluginJars.from(jars)
+  }
+
+  public fun downloadPlugins(config: Action<in DownloadPluginsSpec>) {
+    config.execute(downloadPlugins)
   }
 }

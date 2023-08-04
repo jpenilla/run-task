@@ -16,22 +16,35 @@
  */
 package xyz.jpenilla.runtask.util
 
-import java.io.FileOutputStream
+import org.gradle.api.Project
+import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 import java.io.IOException
 import java.net.URL
+import java.net.URLConnection
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
+import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption.CREATE
+import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
+import java.nio.file.StandardOpenOption.WRITE
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 internal class Downloader(
-  val remote: URL,
-  val destination: Path
+  private val remote: URL,
+  private val destination: Path,
+  private val displayName: String,
+  private val operationName: String
 ) {
+  companion object {
+    private val LOGGER: Logger = Logging.getLogger(Downloader::class.java)
+  }
+
   private var started = false
 
   @Volatile
@@ -40,14 +53,20 @@ internal class Downloader(
   @Volatile
   private var expectedSize = 0L
 
-  fun download(listener: ProgressListener): Result {
+  fun download(project: Project): Result {
     if (started) {
       error("Cannot start download a second time.")
     }
     started = true
 
+    val connection = remote.openConnection()
+    return download(project, connection)
+  }
+
+  fun download(project: Project, connection: URLConnection): Result {
+    val listener = createDownloadListener(project)
+
     val downloadFuture = CompletableFuture.runAsync {
-      val connection = remote.openConnection()
       val expected = connection.contentLengthLong
       listener.onStart(expected)
       expectedSize = expected
@@ -55,8 +74,8 @@ internal class Downloader(
         val wrapped = ReadableByteChannelWrapper(remote) { bytesRead ->
           downloaded += bytesRead
         }
-        FileOutputStream(destination.toFile()).use {
-          it.channel.transferFrom(wrapped, 0, Long.MAX_VALUE)
+        FileChannel.open(destination, CREATE, WRITE, TRUNCATE_EXISTING).use { dest ->
+          dest.transferFrom(wrapped, 0L, Long.MAX_VALUE)
         }
       }
     }
@@ -87,6 +106,30 @@ internal class Downloader(
 
     listener.close()
     return Result.Failure(failure)
+  }
+
+  private fun createDownloadListener(project: Project): ProgressListener {
+    // ProgressLogger is internal Gradle API and can technically be changed,
+    // (although it hasn't since 3.x) so we access it using reflection, and
+    // fallback to using LOGGER if it fails
+    val progressLogger = ProgressLoggerUtil.createProgressLogger(project, operationName)
+    return if (progressLogger != null) {
+      LoggingDownloadListener(
+        progressLogger,
+        { state, message -> state.start("Downloading $displayName", message) },
+        { state, message -> state.progress(message) },
+        { state -> state.completed() },
+        "Downloading $displayName: ",
+        10L
+      )
+    } else {
+      LoggingDownloadListener(
+        LOGGER,
+        logger = { state, message -> state.lifecycle(message) },
+        prefix = "Downloading $displayName: ",
+        updateRateMs = 1000L
+      )
+    }
   }
 
   sealed class Result {

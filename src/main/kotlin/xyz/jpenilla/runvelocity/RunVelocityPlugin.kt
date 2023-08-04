@@ -40,6 +40,12 @@ public abstract class RunVelocityPlugin : RunPlugin() {
       delete(target.sharedCaches.resolve(Constants.VELOCITY_PATH))
     }
 
+    target.tasks.register<Delete>(Constants.Tasks.CLEAN_VELOCITY_PLUGINS_CACHE) {
+      group = Constants.RUN_VELOCITY_TASK_GROUP
+      description = "Delete all locally cached Velocity plugin jars."
+      delete(target.sharedCaches.resolve(Constants.VELOCITY_PLUGINS_PATH))
+    }
+
     val runVelocity = target.tasks.register<RunVelocity>(Constants.Tasks.RUN_VELOCITY) {
       group = Constants.RUN_VELOCITY_TASK_GROUP
       description = "Run a Velocity server for plugin testing."

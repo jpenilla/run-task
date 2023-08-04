@@ -20,16 +20,19 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.UnknownTaskException
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.newInstance
 import org.gradle.kotlin.dsl.property
 import xyz.jpenilla.runpaper.task.RunServer
 import xyz.jpenilla.runtask.RunExtension
+import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.maybeRegister
+import xyz.jpenilla.runtask.util.sharedCaches
 import javax.inject.Inject
 
 /**
@@ -68,12 +71,25 @@ public abstract class RunPaperExtension(project: Project) : RunExtension(project
      * @return task provider
      */
     @JvmOverloads
-    public fun registerTask(op: Action<RunServer> = Action {}): TaskProvider<RunServer> = project.tasks.maybeRegister(Constants.Tasks.RUN_FOLIA) {
-      group = Constants.RUN_PAPER_TASK_GROUP
-      description = "Run a Folia server for plugin testing."
-      displayName.set("Folia")
-      downloadsApiService.convention(DownloadsAPIService.folia(project))
-      op.execute(this)
+    public fun registerTask(op: Action<RunServer> = Action {}): TaskProvider<RunServer> {
+      project.tasks.maybeRegister<Delete>(Constants.Tasks.CLEAN_FOLIA_CACHE) {
+        group = Constants.RUN_PAPER_TASK_GROUP
+        description = "Delete all locally cached Folia jars."
+        delete(project.sharedCaches.resolve(Constants.FOLIA_PATH))
+      }
+      project.tasks.maybeRegister<Delete>(Constants.Tasks.CLEAN_FOLIA_PLUGINS_CACHE) {
+        group = Constants.RUN_PAPER_TASK_GROUP
+        description = "Delete all locally cached Folia plugin jars."
+        delete(project.sharedCaches.resolve(Constants.FOLIA_PLUGINS_PATH))
+      }
+      return project.tasks.maybeRegister(Constants.Tasks.RUN_FOLIA) {
+        group = Constants.RUN_PAPER_TASK_GROUP
+        description = "Run a Folia server for plugin testing."
+        displayName.set("Folia")
+        downloadsApiService.convention(DownloadsAPIService.folia(project))
+        pluginDownloadService.convention(PluginDownloadService.folia(project))
+        op.execute(this)
+      }
     }
 
     /**

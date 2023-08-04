@@ -40,6 +40,12 @@ public abstract class RunWaterfallPlugin : RunPlugin() {
       delete(target.sharedCaches.resolve(Constants.WATERFALL_PATH))
     }
 
+    target.tasks.register<Delete>(Constants.Tasks.CLEAN_WATERFALL_PLUGINS_CACHE) {
+      group = Constants.RUN_WATERFALL_TASK_GROUP
+      description = "Delete all locally cached Waterfall plugin jars."
+      delete(target.sharedCaches.resolve(Constants.WATERFALL_PLUGINS_PATH))
+    }
+
     val runWaterfall = target.tasks.register<RunWaterfall>(Constants.Tasks.RUN_WATERFALL) {
       group = Constants.RUN_WATERFALL_TASK_GROUP
       description = "Run a Waterfall server for plugin testing."

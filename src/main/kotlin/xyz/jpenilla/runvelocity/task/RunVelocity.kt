@@ -16,6 +16,7 @@
  */
 package xyz.jpenilla.runvelocity.task
 
+import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
@@ -26,13 +27,18 @@ import java.nio.file.Path
  */
 public abstract class RunVelocity : RunWithPlugins() {
   override fun init() {
+    super.init()
+
     downloadsApiService.convention(DownloadsAPIService.velocity(project))
+    pluginDownloadService.convention(PluginDownloadService.velocity(project))
     displayName.convention("Velocity")
   }
 
   override fun preExec(workingDir: Path) {
+    super.preExec(workingDir)
+
     FileCopyingPluginHandler("RunVelocity")
-      .setupPlugins(workingDir.resolve("plugins"), pluginJars)
+      .setupPlugins(workingDir.resolve("plugins"), ourPluginJars)
   }
 
   /**

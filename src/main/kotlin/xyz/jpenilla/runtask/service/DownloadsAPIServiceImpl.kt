@@ -32,8 +32,6 @@ import xyz.jpenilla.runtask.paperapi.DownloadsAPI
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.Downloader
 import xyz.jpenilla.runtask.util.InvalidDurationException
-import xyz.jpenilla.runtask.util.LoggingDownloadListener
-import xyz.jpenilla.runtask.util.ProgressLoggerUtil
 import xyz.jpenilla.runtask.util.parseDuration
 import xyz.jpenilla.runtask.util.path
 import xyz.jpenilla.runtask.util.prettyPrint
@@ -166,10 +164,9 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
       .resolve("${parameters.downloadProject.get()}-$version-$buildNumber-${System.currentTimeMillis()}.jar.tmp")
 
     val start = System.currentTimeMillis()
-    val downloadResult = Downloader(downloadURL, tempFile)
-      .download(createDownloadListener(project))
+    val opName = "${parameters.downloadsEndpoint}:${parameters.downloadProject}"
 
-    when (downloadResult) {
+    when (val downloadResult = Downloader(downloadURL, tempFile, displayName, opName).download(project)) {
       is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading {}, took {}.", displayName, Duration.ofMillis(System.currentTimeMillis() - start).prettyPrint())
       is Downloader.Result.Failure -> throw IllegalStateException("Failed to download $displayName.", downloadResult.throwable)
     }
@@ -245,30 +242,6 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     resolveLatestLocalBuild(version)
   }
 
-  private fun createDownloadListener(project: Project): Downloader.ProgressListener {
-    // ProgressLogger is internal Gradle API and can technically be changed,
-    // (although it hasn't since 3.x) so we access it using reflection, and
-    // fallback to using LOGGER if it fails
-    val progressLogger = ProgressLoggerUtil.createProgressLogger(project, "${parameters.downloadsEndpoint}:${parameters.downloadProject}")
-    return if (progressLogger != null) {
-      LoggingDownloadListener(
-        progressLogger,
-        { state, message -> state.start("Downloading $displayName", message) },
-        { state, message -> state.progress(message) },
-        { state -> state.completed() },
-        "Downloading $displayName: ",
-        10L
-      )
-    } else {
-      LoggingDownloadListener(
-        LOGGER,
-        logger = { state, message -> state.lifecycle(message) },
-        prefix = "Downloading $displayName: ",
-        updateRateMs = 1000L
-      )
-    }
-  }
-
   private fun logExpectedActual(expected: String, actual: String) {
     LOGGER.lifecycle(" > Expected: {}", expected)
     LOGGER.lifecycle(" > Actual: {}", actual)
@@ -315,18 +288,18 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   private fun unknownVersion(version: String): Nothing =
     error("Unknown $displayName Version: $version")
 
-  data class JarInfo(
+  private data class JarInfo(
     val buildNumber: Int,
     val fileName: String,
     val sha256: String,
     val keep: Boolean = false
   )
 
-  data class Versions(
+  private data class Versions(
     val versions: MutableMap<String, Version> = HashMap()
   )
 
-  data class Version(
+  private data class Version(
     val name: String,
     val lastUpdateCheck: Long = 0L,
     val knownJars: MutableMap<Int, JarInfo> = HashMap(),
