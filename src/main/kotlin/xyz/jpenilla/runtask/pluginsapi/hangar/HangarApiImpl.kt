@@ -31,15 +31,16 @@ public abstract class HangarApiImpl @Inject constructor(private val name: String
 
   override fun add(author: String, plugin: String, version: String) {
     val job = objects.newInstance(HangarApiDownload::class)
-    job.url.set(url)
+    job.url.set(url.map { it.trimEnd('/') })
     job.author.set(author)
     job.plugin.set(plugin)
     job.version.set(version)
     jobs += job
   }
 
-  override fun addAllDownloads(downloads: Iterable<HangarApiDownload>) {
-    jobs.addAll(downloads)
+  override fun copyConfiguration(api: HangarApi) {
+    url.set(api.url)
+    jobs.addAll(api.downloads)
   }
 
   override val downloads: Iterable<HangarApiDownload>

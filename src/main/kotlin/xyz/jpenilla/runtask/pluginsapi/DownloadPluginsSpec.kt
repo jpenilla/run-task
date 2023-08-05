@@ -43,8 +43,8 @@ import java.util.SortedSet
 import javax.inject.Inject
 
 public abstract class DownloadPluginsSpec @Inject constructor(
-  private val registry: ExtensiblePolymorphicDomainObjectContainer<PluginApi<*>>
-) : PolymorphicDomainObjectContainer<PluginApi<*>> by registry {
+  private val registry: ExtensiblePolymorphicDomainObjectContainer<PluginApi<*, *>>
+) : PolymorphicDomainObjectContainer<PluginApi<*, *>> by registry {
 
   @get:Nested
   public val downloads: List<PluginApiDownload>
@@ -68,6 +68,10 @@ public abstract class DownloadPluginsSpec @Inject constructor(
   }
 
   public fun from(spec: DownloadPluginsSpec) {
+    fun <T : PluginApi<*, *>> cast(o: Any): T {
+      @Suppress("UNCHECKED_CAST")
+      return o as T
+    }
     // copy from the given spec to this spec (useful for sharing)
     for (name in spec.names) {
       val api = spec[name]
@@ -78,8 +82,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
         else -> throw IllegalStateException("Unknown PluginApi type: ${api.javaClass.name}")
       }
       configure(name, type) {
-        @Suppress("UNCHECKED_CAST")
-        addAllDownloads(api.downloads as Iterable<Nothing>)
+        copyConfiguration(cast(api))
       }
     }
   }
@@ -158,7 +161,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
 
   // All zero-arg methods must be annotated or Gradle will think it's an input
   @Internal
-  override fun getAsMap(): SortedMap<String, PluginApi<*>> = registry.asMap
+  override fun getAsMap(): SortedMap<String, PluginApi<*, *>> = registry.asMap
   @Internal
   override fun getNames(): SortedSet<String> = registry.names
   @Internal
@@ -168,7 +171,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
   @Internal
   override fun isEmpty(): Boolean = registry.isEmpty()
   @Internal
-  override fun getNamer(): Namer<PluginApi<*>> = registry.namer
+  override fun getNamer(): Namer<PluginApi<*, *>> = registry.namer
   @get:Internal
   override val size: Int
     get() = registry.size

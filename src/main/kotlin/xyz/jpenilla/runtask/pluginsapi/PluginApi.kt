@@ -18,9 +18,9 @@ package xyz.jpenilla.runtask.pluginsapi
 
 import org.gradle.api.Named
 
-public interface PluginApi<T : PluginApiDownload> : Named {
+public interface PluginApi<in A : PluginApi<A, T>, out T : PluginApiDownload> : Named {
 
-  public fun addAllDownloads(downloads: Iterable<T>)
+  public fun copyConfiguration(api: A)
 
   public val downloads: Iterable<T>
 }

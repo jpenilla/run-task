@@ -19,7 +19,7 @@ package xyz.jpenilla.runtask.pluginsapi.github
 import xyz.jpenilla.runtask.pluginsapi.GitHubApiDownload
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 
-public interface GitHubApi : PluginApi<GitHubApiDownload> {
+public interface GitHubApi : PluginApi<GitHubApi, GitHubApiDownload> {
   public fun add(owner: String, repo: String, tag: String, assetName: String)
 
   public operator fun invoke(owner: String, repo: String, tag: String, assetName: String): Unit = add(owner, repo, tag, assetName)

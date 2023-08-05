@@ -20,7 +20,7 @@ import org.gradle.api.provider.Property
 import xyz.jpenilla.runtask.pluginsapi.HangarApiDownload
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 
-public interface HangarApi : PluginApi<HangarApiDownload> {
+public interface HangarApi : PluginApi<HangarApi, HangarApiDownload> {
   public val url: Property<String>
 
   public fun add(author: String, plugin: String, version: String)

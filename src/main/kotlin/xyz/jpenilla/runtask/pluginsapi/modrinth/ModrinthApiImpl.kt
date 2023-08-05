@@ -33,14 +33,15 @@ public abstract class ModrinthApiImpl @Inject constructor(private val name: Stri
 
   override fun add(id: String, version: String) {
     val job = objects.newInstance(ModrinthApiDownload::class)
-    job.url.set(url)
+    job.url.set(url.map { it.trimEnd('/') })
     job.id.set(id)
     job.version.set(version)
     jobs.add(job)
   }
 
-  override fun addAllDownloads(downloads: Iterable<ModrinthApiDownload>) {
-    jobs.addAll(downloads)
+  override fun copyConfiguration(api: ModrinthApi) {
+    url.set(api.url)
+    jobs.addAll(api.downloads)
   }
 
   override val downloads: Iterable<ModrinthApiDownload>

@@ -20,7 +20,7 @@ import org.gradle.api.provider.Property
 import xyz.jpenilla.runtask.pluginsapi.ModrinthApiDownload
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 
-public interface ModrinthApi : PluginApi<ModrinthApiDownload> {
+public interface ModrinthApi : PluginApi<ModrinthApi, ModrinthApiDownload> {
   public val url: Property<String>
 
   public fun add(id: String, version: String)
