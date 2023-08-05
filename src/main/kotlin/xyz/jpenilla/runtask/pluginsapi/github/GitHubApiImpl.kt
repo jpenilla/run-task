@@ -36,8 +36,8 @@ public abstract class GitHubApiImpl @Inject constructor(private val name: String
     jobs += job
   }
 
-  override fun addAllDownloads(downloads: Iterable<GitHubApiDownload>) {
-    jobs.addAll(downloads)
+  override fun copyConfiguration(api: GitHubApi) {
+    jobs.addAll(api.downloads)
   }
 
   override val downloads: Iterable<GitHubApiDownload>

@@ -96,7 +96,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val platformType = parameters.platformType.get()
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
 
-    val apiUrl = download.url.get()
+    val apiUrl = download.url.get().trimEnd('/')
     val apiAuthor = download.author.get()
     val apiPlugin = download.plugin.get()
     val apiVersion = download.version.get()
@@ -109,8 +109,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val targetDir =
       cacheDir.resolve(Constants.HANGAR_PLUGIN_DIR).resolve(apiAuthor).resolve(apiPlugin).resolve(apiVersion)
     val targetFile = targetDir.resolve(version.fileName)
-    val downloadUrl =
-      apiUrl.trimEnd('/') + "/api/v1/projects/$apiAuthor/$apiPlugin/versions/$apiVersion/$platformType/download"
+    val downloadUrl = "$apiUrl/api/v1/projects/$apiAuthor/$apiPlugin/versions/$apiVersion/$platformType/download"
 
     val setter: (PluginVersion) -> Unit = { plugin[apiVersion] = it }
 
