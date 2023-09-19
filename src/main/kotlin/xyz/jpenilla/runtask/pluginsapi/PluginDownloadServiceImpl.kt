@@ -97,19 +97,17 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
 
     val apiUrl = download.url.get().trimEnd('/')
-    val apiAuthor = download.author.get()
     val apiPlugin = download.plugin.get()
     val apiVersion = download.version.get()
 
     val provider = manifest.hangarProviders.computeIfAbsent(apiUrl) { HangarProvider() }
-    val author = provider.computeIfAbsent(apiAuthor) { HangarAuthor() }
-    val plugin = author.computeIfAbsent(apiPlugin) { PluginVersions() }
+    val plugin = provider.computeIfAbsent(apiPlugin) { PluginVersions() }
     val version = plugin[apiVersion] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion.jar")
 
     val targetDir =
-      cacheDir.resolve(Constants.HANGAR_PLUGIN_DIR).resolve(apiAuthor).resolve(apiPlugin).resolve(apiVersion)
+      cacheDir.resolve(Constants.HANGAR_PLUGIN_DIR).resolve(apiPlugin).resolve(apiVersion)
     val targetFile = targetDir.resolve(version.fileName)
-    val downloadUrl = "$apiUrl/api/v1/projects/$apiAuthor/$apiPlugin/versions/$apiVersion/$platformType/download"
+    val downloadUrl = "$apiUrl/api/v1/projects/$apiPlugin/versions/$apiVersion/$platformType/download"
 
     val setter: (PluginVersion) -> Unit = { plugin[apiVersion] = it }
 
@@ -224,13 +222,9 @@ private data class PluginsManifest(
 )
 
 // hangar aliases:
-private typealias HangarProvider = MutableMap<String, HangarAuthor>
+private typealias HangarProvider = MutableMap<String, PluginVersions>
 
 private fun HangarProvider(): HangarProvider = HashMap()
-
-private typealias HangarAuthor = MutableMap<String, PluginVersions>
-
-private fun HangarAuthor(): HangarAuthor = HashMap()
 
 // modrinth aliases:
 private typealias ModrinthProvider = MutableMap<String, PluginVersions>

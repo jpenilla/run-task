@@ -23,7 +23,7 @@ import xyz.jpenilla.runtask.pluginsapi.PluginApi
 public interface HangarApi : PluginApi<HangarApi, HangarApiDownload> {
   public val url: Property<String>
 
-  public fun add(author: String, plugin: String, version: String)
+  public fun add(plugin: String, version: String)
 
-  public operator fun invoke(author: String, plugin: String, version: String): Unit = add(author, plugin, version)
+  public operator fun invoke(plugin: String, version: String): Unit = add(plugin, version)
 }
