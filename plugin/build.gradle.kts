@@ -63,7 +63,7 @@ indra {
 }
 
 indraSpotlessLicenser {
-  licenseHeaderFile(rootProject.file("LICENSE_HEADER"))
+  licenseHeaderFile(rootProject.file("../LICENSE_HEADER"))
 }
 
 spotless {
