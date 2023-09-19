@@ -4,9 +4,8 @@ plugins {
   `kotlin-dsl`
   id("com.gradle.plugin-publish")
   id("net.kyori.indra")
-  id("net.kyori.indra.license-header")
   id("net.kyori.indra.publishing.gradle-plugin")
-  id("org.jlleitschuh.gradle.ktlint")
+  id("net.kyori.indra.licenser.spotless")
 }
 
 group = "xyz.jpenilla"
@@ -43,7 +42,7 @@ tasks {
   register("format") {
     group = "formatting"
     description = "Formats source code according to project style."
-    dependsOn(licenseFormat, ktlintFormat)
+    dependsOn(spotlessApply)
   }
 }
 
@@ -63,8 +62,23 @@ indra {
   }
 }
 
-license {
-  header(file("LICENSE_HEADER"))
+indraSpotlessLicenser {
+  licenseHeaderFile(rootProject.file("LICENSE_HEADER"))
+}
+
+spotless {
+  val overrides = mapOf(
+    "ktlint_standard_filename" to "disabled",
+    "ktlint_standard_trailing-comma-on-call-site" to "disabled",
+    "ktlint_standard_trailing-comma-on-declaration-site" to "disabled",
+    "ktlint_standard_comment-wrapping" to "disabled", // allow block comments in between elements on the same line
+  )
+  kotlin {
+    ktlint(libs.versions.ktlint.get()).editorConfigOverride(overrides)
+  }
+  kotlinGradle {
+    ktlint(libs.versions.ktlint.get()).editorConfigOverride(overrides)
+  }
 }
 
 fun tags(vararg extra: String): List<String> =
