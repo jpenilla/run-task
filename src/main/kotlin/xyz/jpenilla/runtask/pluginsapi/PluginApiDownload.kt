@@ -27,16 +27,13 @@ public abstract class HangarApiDownload : PluginApiDownload() {
   public abstract val url: Property<String>
 
   @get:Input
-  public abstract val author: Property<String>
-
-  @get:Input
   public abstract val plugin: Property<String>
 
   @get:Input
   public abstract val version: Property<String>
 
   override fun toString(): String {
-    return "HangarApiDownload{url=${url.get()}, author=${author.get()}, plugin=${plugin.get()}, version=${version.get()}}"
+    return "HangarApiDownload{url=${url.get()}, plugin=${plugin.get()}, version=${version.get()}}"
   }
 
   override fun equals(other: Any?): Boolean {
@@ -50,14 +47,12 @@ public abstract class HangarApiDownload : PluginApiDownload() {
     other as HangarApiDownload
 
     return url.get() == other.url.get() &&
-      author.get() == other.author.get() &&
       plugin.get() == other.plugin.get() &&
       version.get() == other.version.get()
   }
 
   override fun hashCode(): Int {
     var result = url.get().hashCode()
-    result = 31 * result + author.get().hashCode()
     result = 31 * result + plugin.get().hashCode()
     result = 31 * result + version.get().hashCode()
     return result

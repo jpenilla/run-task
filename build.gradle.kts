@@ -26,7 +26,7 @@ dependencies {
 kotlin {
   explicitApi()
   jvmToolchain {
-    (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(8))
+    languageVersion.set(JavaLanguageVersion.of(8))
   }
 }
 

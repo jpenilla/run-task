@@ -92,13 +92,13 @@ public abstract class DownloadPluginsSpec @Inject constructor(
   @get:Internal
   public val hangar: NamedDomainObjectProvider<HangarApi>
     get() = named("hangar", HangarApi::class)
-  public fun hangar(author: String, plugin: String, version: String): NamedDomainObjectProvider<HangarApi> =
+  public fun hangar(plugin: String, version: String): NamedDomainObjectProvider<HangarApi> =
     named("hangar", HangarApi::class) {
-      add(author, plugin, version)
+      add(plugin, version)
     }
-  public fun hangar(author: String, plugin: String, version: String, configurationAction: Action<HangarApi>): NamedDomainObjectProvider<HangarApi> =
+  public fun hangar(plugin: String, version: String, configurationAction: Action<HangarApi>): NamedDomainObjectProvider<HangarApi> =
     named("hangar", HangarApi::class) {
-      add(author, plugin, version)
+      add(plugin, version)
       configurationAction.execute(this)
     }
   public fun hangar(configurationAction: Action<HangarApi>): NamedDomainObjectProvider<HangarApi> =
@@ -162,16 +162,22 @@ public abstract class DownloadPluginsSpec @Inject constructor(
   // All zero-arg methods must be annotated or Gradle will think it's an input
   @Internal
   override fun getAsMap(): SortedMap<String, PluginApi<*, *>> = registry.asMap
+
   @Internal
   override fun getNames(): SortedSet<String> = registry.names
+
   @Internal
   override fun getRules(): MutableList<Rule> = registry.rules
+
   @Internal
   override fun getCollectionSchema(): NamedDomainObjectCollectionSchema = registry.collectionSchema
+
   @Internal
   override fun isEmpty(): Boolean = registry.isEmpty()
+
   @Internal
   override fun getNamer(): Namer<PluginApi<*, *>> = registry.namer
+
   @get:Internal
   override val size: Int
     get() = registry.size
