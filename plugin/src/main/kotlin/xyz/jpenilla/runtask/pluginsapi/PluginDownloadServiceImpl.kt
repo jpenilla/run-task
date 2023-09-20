@@ -120,7 +120,27 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   }
 
   private fun resolveGitHubPlugin(project: Project, download: GitHubApiDownload): Path {
-    TODO()
+    val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
+
+    val owner = download.owner.get()
+    val repo = download.repo.get()
+    val tag = download.tag.get()
+    val asset = download.assetName.get()
+
+    val ownerProvider = manifest.githubProvider.computeIfAbsent(owner) { GitHubOwner() }
+    val repoProvider = ownerProvider.computeIfAbsent(repo) { GitHubRepo() }
+    val tagProvider = repoProvider.computeIfAbsent(tag) { PluginVersions() }
+    val version = tagProvider[asset] ?: PluginVersion(fileName = asset)
+
+    val targetDir =
+      cacheDir.resolve(Constants.GITHUB_PLUGIN_DIR).resolve(owner).resolve(repo).resolve(tag)
+    val targetFile = targetDir.resolve(version.fileName)
+    val downloadUrl = "https://github.com/$owner/$repo/releases/download/$tag/$asset"
+
+    val setter: (PluginVersion) -> Unit = { tagProvider[asset] = it }
+
+    val ctx = DownloadCtx(project, "github.com", downloadUrl, targetDir, targetFile, version, setter)
+    return download(ctx)
   }
 
   private fun download(ctx: DownloadCtx): Path {
@@ -238,12 +258,9 @@ private fun GitHubProvider(): GitHubProvider = HashMap()
 private typealias GitHubOwner = MutableMap<String, GitHubRepo>
 
 private fun GitHubOwner(): GitHubOwner = HashMap()
-private typealias GitHubRepo = MutableMap<String, GitHubTag>
+private typealias GitHubRepo = MutableMap<String, PluginVersions>
 
 private fun GitHubRepo(): GitHubRepo = HashMap()
-private typealias GitHubTag = MutableMap<String, PluginVersions>
-
-private fun GitHubTag(): GitHubTag = HashMap()
 
 // general aliases
 private typealias PluginVersions = MutableMap<String, PluginVersion>

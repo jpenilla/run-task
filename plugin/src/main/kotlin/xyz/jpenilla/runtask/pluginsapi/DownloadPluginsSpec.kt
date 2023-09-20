@@ -92,72 +92,39 @@ public abstract class DownloadPluginsSpec @Inject constructor(
   @get:Internal
   public val hangar: NamedDomainObjectProvider<HangarApi>
     get() = named("hangar", HangarApi::class)
-  public fun hangar(plugin: String, version: String): NamedDomainObjectProvider<HangarApi> =
+  public fun hangar(plugin: String, version: String) {
     named("hangar", HangarApi::class) {
       add(plugin, version)
     }
-  public fun hangar(plugin: String, version: String, configurationAction: Action<HangarApi>): NamedDomainObjectProvider<HangarApi> =
-    named("hangar", HangarApi::class) {
-      add(plugin, version)
-      configurationAction.execute(this)
-    }
+  }
   public fun hangar(configurationAction: Action<HangarApi>): NamedDomainObjectProvider<HangarApi> =
     named("hangar", HangarApi::class, configurationAction)
-
-  public fun NamedDomainObjectProvider<HangarApi>.add(author: String, plugin: String, version: String) {
-    configure { add(author, plugin, version) }
-  }
-  public operator fun NamedDomainObjectProvider<HangarApi>.invoke(author: String, plugin: String, version: String) {
-    add(author, plugin, version)
-  }
 
   // modrinth extensions
 
   @get:Internal
   public val modrinth: NamedDomainObjectProvider<ModrinthApi>
     get() = named("modrinth", ModrinthApi::class)
-  public fun modrinth(id: String, version: String): NamedDomainObjectProvider<ModrinthApi> =
+  public fun modrinth(id: String, version: String) {
     named("modrinth", ModrinthApi::class) {
       add(id, version)
     }
-  public fun modrinth(id: String, version: String, configurationAction: Action<ModrinthApi>): NamedDomainObjectProvider<ModrinthApi> =
-    named("modrinth", ModrinthApi::class) {
-      add(id, version)
-      configurationAction.execute(this)
-    }
+  }
   public fun modrinth(configurationAction: Action<ModrinthApi>): NamedDomainObjectProvider<ModrinthApi> =
     named("modrinth", ModrinthApi::class, configurationAction)
-
-  public fun NamedDomainObjectProvider<ModrinthApi>.add(id: String, version: String) {
-    configure { add(id, version) }
-  }
-  public operator fun NamedDomainObjectProvider<ModrinthApi>.invoke(id: String, version: String) {
-    add(id, version)
-  }
 
   // github extensions
 
   @get:Internal
   public val github: NamedDomainObjectProvider<GitHubApi>
     get() = named("github", GitHubApi::class)
-  public fun github(owner: String, repo: String, tag: String, assetName: String): NamedDomainObjectProvider<GitHubApi> =
+  public fun github(owner: String, repo: String, tag: String, assetName: String) {
     named("github", GitHubApi::class) {
       add(owner, repo, tag, assetName)
     }
-  public fun github(owner: String, repo: String, tag: String, assetName: String, configurationAction: Action<GitHubApi>): NamedDomainObjectProvider<GitHubApi> =
-    named("github", GitHubApi::class) {
-      add(owner, repo, tag, assetName)
-      configurationAction.execute(this)
-    }
+  }
   public fun github(configurationAction: Action<GitHubApi>): NamedDomainObjectProvider<GitHubApi> =
     named("github", GitHubApi::class, configurationAction)
-
-  public fun NamedDomainObjectProvider<GitHubApi>.add(owner: String, repo: String, tag: String, assetName: String) {
-    configure { add(owner, repo, tag, assetName) }
-  }
-  public operator fun NamedDomainObjectProvider<GitHubApi>.invoke(owner: String, repo: String, tag: String, assetName: String) {
-    add(owner, repo, tag, assetName)
-  }
 
   // All zero-arg methods must be annotated or Gradle will think it's an input
   @Internal
