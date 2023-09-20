@@ -54,28 +54,39 @@ internal class LoggingDownloadListener<S>(
 
   private fun createMessage(bytesDownloaded: Long): String {
     val elapsedMs = System.currentTimeMillis() - startTime
-    val percentCompleted = bytesDownloaded.toDouble() / expectedSize.toDouble()
 
     val message = StringBuilder()
 
-    message.append(prefix)
-      .append(formatSize(bytesDownloaded))
-      .append('/')
-      .append(formatSize(expectedSize))
-      .append(" <")
-      .append(bar(25, percentCompleted))
-      .append("> ")
-      .append(PERCENT_DECIMAL_FORMAT.format(percentCompleted))
+    if (expectedSize <= 0) {
+      message.append(prefix)
+        .append(formatSize(bytesDownloaded))
+        .append('/')
+        .append("?")
+    } else {
+      val percentCompleted = bytesDownloaded.toDouble() / expectedSize.toDouble()
+      message.append(prefix)
+        .append(formatSize(bytesDownloaded))
+        .append('/')
+        .append(formatSize(expectedSize))
+        .append(" <")
+        .append(bar(25, percentCompleted))
+        .append("> ")
+        .append(PERCENT_DECIMAL_FORMAT.format(percentCompleted))
+    }
 
     // After 10 seconds start showing more detailed info (time elapsed and est. remaining)
     if (elapsedMs > 1000 * 10) {
-      val allTimeForDownloading = elapsedMs * expectedSize / bytesDownloaded
-      val roughEstimateRemainingMs = allTimeForDownloading - elapsedMs
-
       val elapsed = Duration.ofMillis(elapsedMs).prettyPrint()
-      val remaining = Duration.ofMillis(roughEstimateRemainingMs).prettyPrint()
 
-      val extra = ", $elapsed elapsed, est. $remaining remaining"
+      val remaining = if (expectedSize <= 0) {
+        "unknown time"
+      } else {
+        val allTimeForDownloading = elapsedMs * expectedSize / bytesDownloaded
+        val roughEstimateRemainingMs = allTimeForDownloading - elapsedMs
+        "est. " + Duration.ofMillis(roughEstimateRemainingMs).prettyPrint()
+      }
+
+      val extra = ", $elapsed elapsed, $remaining remaining"
       message.append(extra)
     }
 
@@ -84,13 +95,7 @@ internal class LoggingDownloadListener<S>(
 
   override fun onStart(expectedSizeBytes: Long) {
     startTime = System.currentTimeMillis()
-    expectedSize = expectedSizeBytes.run {
-      if (this == 0L) {
-        // give some invalid progress instead of / by 0
-        return@run 1L
-      }
-      this
-    }
+    expectedSize = expectedSizeBytes
     onStart(state, createMessage(0L))
   }
 
