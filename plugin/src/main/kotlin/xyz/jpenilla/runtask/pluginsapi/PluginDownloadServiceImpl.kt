@@ -85,6 +85,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
       is HangarApiDownload -> resolveHangerPlugin(project, download)
       is ModrinthApiDownload -> resolveModrinthPlugin(project, download)
       is GitHubApiDownload -> resolveGitHubPlugin(project, download)
+      is UrlDownload -> resolveUrl(project, download)
     }
   }
 
@@ -92,6 +93,17 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     get() = parameters.refreshDependencies.get()
   private val offlineMode: Boolean
     get() = parameters.offlineMode.get()
+
+  private fun resolveUrl(project: Project, download: UrlDownload): Path {
+    val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
+    val targetDir = cacheDir.resolve(Constants.URL_PLUGIN_DIR)
+    val urlHash = download.urlHash()
+    val version = manifest.urlProvider[urlHash] ?: PluginVersion(fileName = "$urlHash.jar")
+    val targetFile = targetDir.resolve(version.fileName)
+    val setter: (PluginVersion) -> Unit = { manifest.urlProvider[urlHash] = it }
+    val ctx = DownloadCtx(project, "url", download.url.get(), targetDir, targetFile, version, setter)
+    return download(ctx)
+  }
 
   private fun resolveHangerPlugin(project: Project, download: HangarApiDownload): Path {
     val platformType = parameters.platformType.get()
@@ -265,7 +277,8 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
 private data class PluginsManifest(
   val hangarProviders: MutableMap<String, HangarProvider> = HashMap(),
   val modrinthProviders: MutableMap<String, ModrinthProvider> = HashMap(),
-  val githubProvider: GitHubProvider = GitHubProvider()
+  val githubProvider: GitHubProvider = GitHubProvider(),
+  val urlProvider: PluginVersions = PluginVersions()
 )
 
 // hangar types:

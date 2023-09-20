@@ -37,6 +37,7 @@ internal object Constants {
   const val HANGAR_PLUGIN_DIR = "hangar"
   const val MODRINTH_PLUGIN_DIR = "modrinth"
   const val GITHUB_PLUGIN_DIR = "github"
+  const val URL_PLUGIN_DIR = "url"
 
   object Plugins {
     const val SHADOW_PLUGIN_ID = "com.github.johnrengelman.shadow"

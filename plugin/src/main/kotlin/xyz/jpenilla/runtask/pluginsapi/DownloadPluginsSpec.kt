@@ -36,6 +36,8 @@ import xyz.jpenilla.runtask.pluginsapi.hangar.HangarApi
 import xyz.jpenilla.runtask.pluginsapi.hangar.HangarApiImpl
 import xyz.jpenilla.runtask.pluginsapi.modrinth.ModrinthApi
 import xyz.jpenilla.runtask.pluginsapi.modrinth.ModrinthApiImpl
+import xyz.jpenilla.runtask.pluginsapi.url.UrlPluginProvider
+import xyz.jpenilla.runtask.pluginsapi.url.UrlPluginProviderImpl
 import xyz.jpenilla.runtask.util.configure
 import xyz.jpenilla.runtask.util.registerFactory
 import java.util.SortedMap
@@ -57,6 +59,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
     registry.registerFactory(HangarApi::class) { name -> objects.newInstance(HangarApiImpl::class, name) }
     registry.registerFactory(ModrinthApi::class) { name -> objects.newInstance(ModrinthApiImpl::class, name) }
     registry.registerFactory(GitHubApi::class) { name -> objects.newInstance(GitHubApiImpl::class, name) }
+    registry.registerFactory(UrlPluginProvider::class) { name -> objects.newInstance(UrlPluginProviderImpl::class, name) }
 
     register("hangar", HangarApi::class) {
       url.set("https://hangar.papermc.io")
@@ -65,6 +68,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
       url.set("https://api.modrinth.com")
     }
     register("github", GitHubApi::class)
+    register("url", UrlPluginProvider::class)
   }
 
   public fun from(spec: DownloadPluginsSpec) {
@@ -125,6 +129,19 @@ public abstract class DownloadPluginsSpec @Inject constructor(
   }
   public fun github(configurationAction: Action<GitHubApi>): NamedDomainObjectProvider<GitHubApi> =
     named("github", GitHubApi::class, configurationAction)
+
+  // url extensions
+
+  @get:Internal
+  public val url: NamedDomainObjectProvider<UrlPluginProvider>
+    get() = named("url", UrlPluginProvider::class)
+  public fun url(url: String) {
+    named("url", UrlPluginProvider::class) {
+      add(url)
+    }
+  }
+  public fun url(configurationAction: Action<UrlPluginProvider>): NamedDomainObjectProvider<UrlPluginProvider> =
+    named("url", UrlPluginProvider::class, configurationAction)
 
   // All zero-arg methods must be annotated or Gradle will think it's an input
   @Internal
