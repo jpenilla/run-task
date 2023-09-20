@@ -16,7 +16,6 @@
  */
 package xyz.jpenilla.runtask.pluginsapi
 
-import org.gradle.api.Action
 import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
 import org.gradle.api.NamedDomainObjectCollectionSchema
 import org.gradle.api.NamedDomainObjectProvider
@@ -102,8 +101,6 @@ public abstract class DownloadPluginsSpec @Inject constructor(
       add(plugin, version)
     }
   }
-  public fun hangar(configurationAction: Action<HangarApi>): NamedDomainObjectProvider<HangarApi> =
-    named("hangar", HangarApi::class, configurationAction)
 
   // modrinth extensions
 
@@ -115,8 +112,6 @@ public abstract class DownloadPluginsSpec @Inject constructor(
       add(id, version)
     }
   }
-  public fun modrinth(configurationAction: Action<ModrinthApi>): NamedDomainObjectProvider<ModrinthApi> =
-    named("modrinth", ModrinthApi::class, configurationAction)
 
   // github extensions
 
@@ -128,8 +123,6 @@ public abstract class DownloadPluginsSpec @Inject constructor(
       add(owner, repo, tag, assetName)
     }
   }
-  public fun github(configurationAction: Action<GitHubApi>): NamedDomainObjectProvider<GitHubApi> =
-    named("github", GitHubApi::class, configurationAction)
 
   // url extensions
 
@@ -141,8 +134,6 @@ public abstract class DownloadPluginsSpec @Inject constructor(
       add(url)
     }
   }
-  public fun url(configurationAction: Action<UrlPluginProvider>): NamedDomainObjectProvider<UrlPluginProvider> =
-    named("url", UrlPluginProvider::class, configurationAction)
 
   // All zero-arg methods must be annotated or Gradle will think it's an input
   @Internal
