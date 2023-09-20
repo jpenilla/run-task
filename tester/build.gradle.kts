@@ -9,7 +9,8 @@ tasks {
     minecraftVersion("1.20.1")
     runDirectory.set(layout.projectDirectory.dir("runServer"))
     downloadPlugins {
-      hangar("squaremap", "1.2.0")
+      // hangar("squaremap", "1.2.0")
+      github("jpenilla", "squaremap", "v1.2.0", "squaremap-paper-mc1.20.1-1.2.0.jar")
     }
   }
   runVelocity {
