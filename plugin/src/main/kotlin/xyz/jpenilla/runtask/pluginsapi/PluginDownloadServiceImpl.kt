@@ -16,6 +16,7 @@
  */
 package xyz.jpenilla.runtask.pluginsapi
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
@@ -101,22 +102,49 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val apiVersion = download.version.get()
 
     val provider = manifest.hangarProviders.computeIfAbsent(apiUrl) { HangarProvider() }
-    val plugin = provider.computeIfAbsent(apiPlugin) { PluginVersions() }
-    val version = plugin[apiVersion] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion.jar")
+    val plugin = provider.computeIfAbsent(apiPlugin) { HangarPlatforms() }
+    val platform = plugin.computeIfAbsent(platformType.name) { PluginVersions() }
+    val version = platform[apiVersion] ?: PluginVersion(fileName = "$apiPlugin-${platformType.name}-$apiVersion.jar")
 
     val targetDir =
       cacheDir.resolve(Constants.HANGAR_PLUGIN_DIR).resolve(apiPlugin).resolve(apiVersion)
     val targetFile = targetDir.resolve(version.fileName)
     val downloadUrl = "$apiUrl/api/v1/projects/$apiPlugin/versions/$apiVersion/$platformType/download"
 
-    val setter: (PluginVersion) -> Unit = { plugin[apiVersion] = it }
-
+    val setter: (PluginVersion) -> Unit = { platform[apiVersion] = it }
     val ctx = DownloadCtx(project, apiUrl, downloadUrl, targetDir, targetFile, version, setter)
     return download(ctx)
   }
 
   private fun resolveModrinthPlugin(project: Project, download: ModrinthApiDownload): Path {
-    TODO()
+    val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
+
+    val apiVersion = download.version.get()
+    val apiPlugin = download.id.get()
+    val apiUrl = download.url.get()
+
+    val provider = manifest.modrinthProviders.computeIfAbsent(download.url.get()) { ModrinthProvider() }
+    val plugin = provider.computeIfAbsent(download.id.get()) { PluginVersions() }
+    val jsonVersionName = "$apiVersion-json"
+    val jsonVersion = plugin[jsonVersionName] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion-info.json")
+    // modrinth only provides sha1 and sha512 hash, not sha256
+    val version = plugin[apiVersion] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion.jar")
+
+    val targetDir =
+      cacheDir.resolve(Constants.MODRINTH_PLUGIN_DIR).resolve(apiPlugin)
+    val jsonFile = targetDir.resolve(jsonVersion.fileName)
+    val targetFile = targetDir.resolve(version.fileName)
+
+    val versionRequestUrl = "$apiUrl/v2/project/$apiPlugin/version/$apiVersion"
+    val versionJsonPath = download(
+      DownloadCtx(project, apiUrl, versionRequestUrl, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it })
+    )
+    val versionInfo = mapper.readValue<ModrinthVersionResponse>(versionJsonPath.toFile())
+    val primaryFile = versionInfo.files.find { it.primary } ?: error("Could not find primary file for $download in $versionInfo")
+
+    return download(
+      DownloadCtx(project, apiUrl, primaryFile.url, targetDir, targetFile, version, setter = { plugin[apiVersion] = it })
+    )
   }
 
   private fun resolveGitHubPlugin(project: Project, download: GitHubApiDownload): Path {
@@ -138,7 +166,6 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val downloadUrl = "https://github.com/$owner/$repo/releases/download/$tag/$asset"
 
     val setter: (PluginVersion) -> Unit = { tagProvider[asset] = it }
-
     val ctx = DownloadCtx(project, "github.com", downloadUrl, targetDir, targetFile, version, setter)
     return download(ctx)
   }
@@ -241,17 +268,33 @@ private data class PluginsManifest(
   val githubProvider: GitHubProvider = GitHubProvider()
 )
 
-// hangar aliases:
-private typealias HangarProvider = MutableMap<String, PluginVersions>
+// hangar types:
+private typealias HangarProvider = MutableMap<String, HangarPlatforms>
+
+private typealias HangarPlatforms = MutableMap<String, PluginVersions>
 
 private fun HangarProvider(): HangarProvider = HashMap()
 
-// modrinth aliases:
+private fun HangarPlatforms(): HangarPlatforms = HashMap()
+
+// modrinth types:
 private typealias ModrinthProvider = MutableMap<String, PluginVersions>
 
 private fun ModrinthProvider(): ModrinthProvider = HashMap()
 
-// github aliases:
+@JsonIgnoreProperties(ignoreUnknown = true)
+private class ModrinthVersionResponse(
+  val files: List<FileData>
+) {
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  class FileData(
+    val url: String,
+    val primary: Boolean,
+    val hashes: Map<String, String>
+  )
+}
+
+// github types:
 private typealias GitHubProvider = MutableMap<String, GitHubOwner>
 
 private fun GitHubProvider(): GitHubProvider = HashMap()
@@ -262,7 +305,7 @@ private typealias GitHubRepo = MutableMap<String, PluginVersions>
 
 private fun GitHubRepo(): GitHubRepo = HashMap()
 
-// general aliases
+// general types:
 private typealias PluginVersions = MutableMap<String, PluginVersion>
 
 private fun PluginVersions(): PluginVersions = HashMap()
