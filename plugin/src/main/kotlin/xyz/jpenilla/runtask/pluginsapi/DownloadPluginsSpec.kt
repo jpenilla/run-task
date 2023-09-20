@@ -83,6 +83,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
         is HangarApi -> HangarApi::class
         is ModrinthApi -> ModrinthApi::class
         is GitHubApi -> GitHubApi::class
+        is UrlPluginProvider -> UrlPluginProvider::class
         else -> throw IllegalStateException("Unknown PluginApi type: ${api.javaClass.name}")
       }
       configure(name, type) {
