@@ -68,13 +68,6 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
       }
     }
 
-    public fun folia(project: Project): Provider<out PluginDownloadService> {
-      return registerIfAbsent(Projects.FOLIA, project) {
-        platformType.set(PlatformType.PAPER)
-        cacheDirectory.fileValue(project.sharedCaches.resolve(Constants.FOLIA_PLUGINS_PATH).toFile())
-      }
-    }
-
     public fun velocity(project: Project): Provider<out PluginDownloadService> {
       return registerIfAbsent(Projects.VELOCITY, project) {
         platformType.set(PlatformType.VELOCITY)

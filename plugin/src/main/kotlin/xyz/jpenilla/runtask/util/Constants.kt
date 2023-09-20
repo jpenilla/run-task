@@ -24,15 +24,16 @@ internal object Constants {
 
   const val GRADLE_CACHES_DIRECTORY_NAME = "caches"
   const val RUN_PATH = "run-task-jars"
+
   const val USER_PATH = "$RUN_PATH/user"
   const val PAPER_PATH = "$RUN_PATH/paper"
   const val FOLIA_PATH = "$RUN_PATH/folia"
   const val VELOCITY_PATH = "$RUN_PATH/velocity"
   const val WATERFALL_PATH = "$RUN_PATH/waterfall"
-  const val PAPER_PLUGINS_PATH = "$PAPER_PATH/plugins"
-  const val FOLIA_PLUGINS_PATH = "$FOLIA_PATH/plugins"
-  const val VELOCITY_PLUGINS_PATH = "$VELOCITY_PATH/plugins"
-  const val WATERFALL_PLUGINS_PATH = "$WATERFALL_PATH/plugins"
+
+  const val PAPER_PLUGINS_PATH = "$RUN_PATH/plugins/paper"
+  const val VELOCITY_PLUGINS_PATH = "$RUN_PATH/plugins/velocity"
+  const val WATERFALL_PLUGINS_PATH = "$RUN_PATH/plugins/waterfall"
 
   const val HANGAR_PLUGIN_DIR = "hangar"
   const val MODRINTH_PLUGIN_DIR = "modrinth"
@@ -53,12 +54,14 @@ internal object Constants {
     const val CLEAN_VELOCITY_CACHE = "cleanVelocityCache"
     const val CLEAN_WATERFALL_CACHE = "cleanWaterfallCache"
     const val CLEAN_USER_SERVICES_CACHE = "cleanCustomServiceCaches"
-    const val CLEAN_ALL_CACHES = "cleanAllRunTaskCaches"
+    // const val CLEAN_RUNTIME_JARS = "cleanRuntimeJars"
 
     const val CLEAN_PAPER_PLUGINS_CACHE = "cleanPaperPluginsCache"
-    const val CLEAN_FOLIA_PLUGINS_CACHE = "cleanFoliaPluginsCache"
     const val CLEAN_VELOCITY_PLUGINS_CACHE = "cleanVelocityPluginsCache"
     const val CLEAN_WATERFALL_PLUGINS_CACHE = "cleanWaterfallPluginsCache"
+    // const val CLEAN_PLUGIN_JARS = "cleanPluginJars"
+
+    const val CLEAN_ALL_CACHES = "cleanAllRunTaskCaches"
 
     const val RUN_SERVER = "runServer"
     const val RUN_FOLIA = "runFolia"

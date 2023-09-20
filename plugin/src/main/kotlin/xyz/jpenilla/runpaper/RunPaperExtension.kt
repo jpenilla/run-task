@@ -77,17 +77,12 @@ public abstract class RunPaperExtension(project: Project) : RunExtension(project
         description = "Delete all locally cached Folia jars."
         delete(project.sharedCaches.resolve(Constants.FOLIA_PATH))
       }
-      project.tasks.maybeRegister<Delete>(Constants.Tasks.CLEAN_FOLIA_PLUGINS_CACHE) {
-        group = Constants.RUN_PAPER_TASK_GROUP
-        description = "Delete all locally cached Folia plugin jars."
-        delete(project.sharedCaches.resolve(Constants.FOLIA_PLUGINS_PATH))
-      }
       return project.tasks.maybeRegister(Constants.Tasks.RUN_FOLIA) {
         group = Constants.RUN_PAPER_TASK_GROUP
         description = "Run a Folia server for plugin testing."
         displayName.set("Folia")
         downloadsApiService.convention(DownloadsAPIService.folia(project))
-        pluginDownloadService.convention(PluginDownloadService.folia(project))
+        pluginDownloadService.convention(PluginDownloadService.paper(project))
         op.execute(this)
       }
     }
