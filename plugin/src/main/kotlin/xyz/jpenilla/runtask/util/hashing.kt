@@ -23,9 +23,11 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 
-private enum class HashingAlgorithm(val algorithmName: String) {
+internal enum class HashingAlgorithm(private val algorithmName: String) {
   MD5("MD5"),
-  SHA256("SHA-256");
+  SHA512("SHA-512"),
+  SHA256("SHA-256"),
+  SHA1("SHA-1");
 
   fun digest(): MessageDigest = try {
     MessageDigest.getInstance(algorithmName)
@@ -40,7 +42,7 @@ internal fun Path.sha256(): String =
 private fun Path.calculateHash(algorithm: HashingAlgorithm): ByteArray =
   Files.newInputStream(this).calculateHash(algorithm)
 
-private fun InputStream.calculateHash(algorithm: HashingAlgorithm): ByteArray = use { inputStream ->
+internal fun InputStream.calculateHash(algorithm: HashingAlgorithm): ByteArray = use { inputStream ->
   val stream = DigestInputStream(inputStream, algorithm.digest())
   stream.use { digestStream ->
     val buffer = ByteArray(1024)
@@ -51,7 +53,7 @@ private fun InputStream.calculateHash(algorithm: HashingAlgorithm): ByteArray = 
   return stream.messageDigest.digest()
 }
 
-private fun toHexString(hash: ByteArray): String {
+internal fun toHexString(hash: ByteArray): String {
   val hexString = StringBuilder(2 * hash.size)
   for (byte in hash) {
     val hex = Integer.toHexString(0xff and byte.toInt())

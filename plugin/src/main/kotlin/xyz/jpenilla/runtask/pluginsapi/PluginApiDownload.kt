@@ -18,6 +18,9 @@ package xyz.jpenilla.runtask.pluginsapi
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import xyz.jpenilla.runtask.util.HashingAlgorithm
+import xyz.jpenilla.runtask.util.calculateHash
+import xyz.jpenilla.runtask.util.toHexString
 
 public sealed class PluginApiDownload
 
@@ -137,5 +140,36 @@ public abstract class GitHubApiDownload : PluginApiDownload() {
     result = 31 * result + tag.get().hashCode()
     result = 31 * result + assetName.get().hashCode()
     return result
+  }
+}
+
+public abstract class UrlDownload : PluginApiDownload() {
+
+  @get:Input
+  public abstract val url: Property<String>
+
+  override fun toString(): String {
+    return "UrlDownload{url=${url.get()}}"
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) {
+      return true
+    }
+    if (javaClass != other?.javaClass) {
+      return false
+    }
+
+    other as UrlDownload
+
+    return url.get() == other.url.get()
+  }
+
+  override fun hashCode(): Int {
+    return url.hashCode()
+  }
+
+  internal fun urlHash(): String {
+    return toHexString(url.get().byteInputStream().calculateHash(HashingAlgorithm.SHA1))
   }
 }
