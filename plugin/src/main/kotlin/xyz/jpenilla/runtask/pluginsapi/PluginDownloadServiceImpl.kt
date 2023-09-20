@@ -25,14 +25,17 @@ import org.gradle.api.Project
 import org.gradle.api.logging.Logging
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.Downloader
+import xyz.jpenilla.runtask.util.HashingAlgorithm
+import xyz.jpenilla.runtask.util.calculateHash
 import xyz.jpenilla.runtask.util.path
 import xyz.jpenilla.runtask.util.prettyPrint
-import xyz.jpenilla.runtask.util.sha256
+import xyz.jpenilla.runtask.util.toHexString
 import java.net.HttpURLConnection
 import java.net.URI
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.Locale
 import kotlin.io.path.bufferedReader
 import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createDirectories
@@ -98,7 +101,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
     val targetDir = cacheDir.resolve(Constants.URL_PLUGIN_DIR)
     val urlHash = download.urlHash()
-    val version = manifest.urlProvider[urlHash] ?: PluginVersion(fileName = "$urlHash.jar")
+    val version = manifest.urlProvider[urlHash] ?: PluginVersion(fileName = "$urlHash.jar", displayName = download.url.get())
     val targetFile = targetDir.resolve(version.fileName)
     val setter: (PluginVersion) -> Unit = { manifest.urlProvider[urlHash] = it }
     val ctx = DownloadCtx(project, "url", download.url.get(), targetDir, targetFile, version, setter)
@@ -116,7 +119,10 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val provider = manifest.hangarProviders.computeIfAbsent(apiUrl) { HangarProvider() }
     val plugin = provider.computeIfAbsent(apiPlugin) { HangarPlatforms() }
     val platform = plugin.computeIfAbsent(platformType.name) { PluginVersions() }
-    val version = platform[apiVersion] ?: PluginVersion(fileName = "$apiPlugin-${platformType.name}-$apiVersion.jar")
+    val version = platform[apiVersion] ?: PluginVersion(
+      fileName = "$apiPlugin-${platformType.name}-$apiVersion.jar",
+      displayName = "hangar:$apiPlugin:${platformType.name}:$apiVersion"
+    )
 
     val targetDir =
       cacheDir.resolve(Constants.HANGAR_PLUGIN_DIR).resolve(apiPlugin).resolve(apiVersion)
@@ -138,14 +144,11 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val provider = manifest.modrinthProviders.computeIfAbsent(download.url.get()) { ModrinthProvider() }
     val plugin = provider.computeIfAbsent(download.id.get()) { PluginVersions() }
     val jsonVersionName = "$apiVersion-json"
-    val jsonVersion = plugin[jsonVersionName] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion-info.json")
-    // modrinth only provides sha1 and sha512 hash, not sha256
-    val version = plugin[apiVersion] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion.jar")
+    val jsonVersion = plugin[jsonVersionName] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion-info.json", displayName = "modrinth:$apiPlugin:$apiVersion:metadata")
 
     val targetDir =
       cacheDir.resolve(Constants.MODRINTH_PLUGIN_DIR).resolve(apiPlugin)
     val jsonFile = targetDir.resolve(jsonVersion.fileName)
-    val targetFile = targetDir.resolve(version.fileName)
 
     val versionRequestUrl = "$apiUrl/v2/project/$apiPlugin/version/$apiVersion"
     val versionJsonPath = download(
@@ -153,6 +156,13 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     )
     val versionInfo = mapper.readValue<ModrinthVersionResponse>(versionJsonPath.toFile())
     val primaryFile = versionInfo.files.find { it.primary } ?: error("Could not find primary file for $download in $versionInfo")
+
+    val version = plugin[apiVersion] ?: PluginVersion(
+      fileName = "$apiPlugin-$apiVersion.jar",
+      displayName = "modrinth:$apiPlugin:$apiVersion",
+      hash = Hash(primaryFile.hashes["sha512"] ?: error("Missing hash in $primaryFile"), HashingAlgorithm.SHA512.name)
+    )
+    val targetFile = targetDir.resolve(version.fileName)
 
     return download(
       DownloadCtx(project, apiUrl, primaryFile.url, targetDir, targetFile, version, setter = { plugin[apiVersion] = it })
@@ -170,7 +180,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val ownerProvider = manifest.githubProvider.computeIfAbsent(owner) { GitHubOwner() }
     val repoProvider = ownerProvider.computeIfAbsent(repo) { GitHubRepo() }
     val tagProvider = repoProvider.computeIfAbsent(tag) { PluginVersions() }
-    val version = tagProvider[asset] ?: PluginVersion(fileName = asset)
+    val version = tagProvider[asset] ?: PluginVersion(fileName = asset, displayName = "github:$owner/$repo:$tag/$asset")
 
     val targetDir =
       cacheDir.resolve(Constants.GITHUB_PLUGIN_DIR).resolve(owner).resolve(repo).resolve(tag)
@@ -215,7 +225,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
       connection.setRequestProperty("Accept", "application/octet-stream")
 
       if (ctx.targetFile.isRegularFile()) {
-        if (ctx.version.lastUpdateCheck > 0 && ctx.version.sha256sum != null && ctx.targetFile.sha256() == ctx.version.sha256sum) {
+        if (ctx.version.lastUpdateCheck > 0 && ctx.version.hash?.check(ctx.targetFile) != false) {
           // File matches what we expected
           connection.ifModifiedSince = ctx.version.lastUpdateCheck
 
@@ -223,7 +233,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
             connection.setRequestProperty("If-None-Match", ctx.version.etag)
           }
         } else {
-          // The file exists, but we have no way of verifying it
+          // The file exists, but we have no way of verifying it (or it is invalid)
           ctx.targetFile.deleteExisting()
         }
       }
@@ -243,11 +253,13 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
           ctx.targetDir.createDirectories()
         }
 
-        val start = Instant.now()
         val opName = "${ctx.baseUrl}:${ctx.version.fileName}"
-        when (val res = Downloader(url, ctx.targetFile, ctx.version.fileName, opName).download(ctx.project, connection)) {
-          is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading {}, took {}.", ctx.version.fileName, Duration.between(start, Instant.now()).prettyPrint())
-          is Downloader.Result.Failure -> throw IllegalStateException("Failed to download ${ctx.version.fileName}.", res.throwable)
+        val displayName = ctx.version.displayName ?: ctx.version.fileName
+        val start = Instant.now()
+        LOGGER.lifecycle("Downloading {}...", displayName)
+        when (val res = Downloader(url, ctx.targetFile, displayName, opName).download(ctx.project, connection)) {
+          is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading {}, took {}.", displayName, Duration.between(start, Instant.now()).prettyPrint())
+          is Downloader.Result.Failure -> throw IllegalStateException("Failed to download $displayName.", res.throwable)
         }
 
         val etagValue: String? = connection.getHeaderField("ETag")
@@ -296,11 +308,11 @@ private typealias ModrinthProvider = MutableMap<String, PluginVersions>
 private fun ModrinthProvider(): ModrinthProvider = HashMap()
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-private class ModrinthVersionResponse(
+private data class ModrinthVersionResponse(
   val files: List<FileData>
 ) {
   @JsonIgnoreProperties(ignoreUnknown = true)
-  class FileData(
+  data class FileData(
     val url: String,
     val primary: Boolean,
     val hashes: Map<String, String>
@@ -325,6 +337,16 @@ private fun PluginVersions(): PluginVersions = HashMap()
 private data class PluginVersion(
   val lastUpdateCheck: Long = 0L,
   val etag: String? = null,
-  val sha256sum: String? = null,
-  val fileName: String
+  val hash: Hash? = null,
+  val fileName: String,
+  val displayName: String? = null
 )
+
+private data class Hash(
+  val hash: String,
+  val type: String
+) {
+  fun type() = HashingAlgorithm.valueOf(type.toUpperCase(Locale.ENGLISH))
+
+  fun check(file: Path): Boolean = toHexString(file.calculateHash(type())) == hash
+}
