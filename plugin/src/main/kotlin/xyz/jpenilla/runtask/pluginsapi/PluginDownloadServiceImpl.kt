@@ -82,7 +82,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     manifest = loadOrCreateManifest()
 
     return when (download) {
-      is HangarApiDownload -> resolveHangerPlugin(project, download)
+      is HangarApiDownload -> resolveHangarPlugin(project, download)
       is ModrinthApiDownload -> resolveModrinthPlugin(project, download)
       is GitHubApiDownload -> resolveGitHubPlugin(project, download)
       is UrlDownload -> resolveUrl(project, download)
@@ -105,7 +105,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     return download(ctx)
   }
 
-  private fun resolveHangerPlugin(project: Project, download: HangarApiDownload): Path {
+  private fun resolveHangarPlugin(project: Project, download: HangarApiDownload): Path {
     val platformType = parameters.platformType.get()
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
 
