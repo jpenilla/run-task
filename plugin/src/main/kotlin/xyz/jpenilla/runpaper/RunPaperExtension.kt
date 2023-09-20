@@ -56,7 +56,9 @@ public abstract class RunPaperExtension(project: Project) : RunExtension(project
      * Sets how the `runFolia` task's [RunServer.pluginJars] collection will be handled, if
      * the task is registered with [registerTask].
      *
-     * Defaults to [PluginsMode.PLUGIN_JAR_DETECTION]
+     * Defaults to [PluginsMode.PLUGIN_JAR_DETECTION].
+     *
+     * Does not impact [RunServer.downloadPlugins].
      */
     public val pluginsMode: Property<PluginsMode> = project.objects.property<PluginsMode>()
       .convention(PluginsMode.PLUGIN_JAR_DETECTION)
