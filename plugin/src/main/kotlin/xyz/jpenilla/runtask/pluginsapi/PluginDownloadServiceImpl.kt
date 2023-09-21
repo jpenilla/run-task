@@ -121,7 +121,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val platform = plugin.computeIfAbsent(platformType.name) { PluginVersions() }
     val version = platform[apiVersion] ?: PluginVersion(
       fileName = "$apiPlugin-${platformType.name}-$apiVersion.jar",
-      displayName = "hangar:$apiPlugin:${platformType.name}:$apiVersion"
+      displayName = "hangar:$apiPlugin:$apiVersion:${platformType.name}"
     )
 
     val targetDir =
