@@ -19,8 +19,17 @@ package xyz.jpenilla.runtask.pluginsapi.github
 import xyz.jpenilla.runtask.pluginsapi.GitHubApiDownload
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 
+/**
+ * [PluginApi] implementation for GitHub Releases.
+ */
 public interface GitHubApi : PluginApi<GitHubApi, GitHubApiDownload> {
+  /**
+   * Add a release artifact plugin download.
+   *
+   * @param owner repo owner
+   * @param repo repo name
+   * @param tag release tag
+   * @param assetName asset file name
+   */
   public fun add(owner: String, repo: String, tag: String, assetName: String)
-
-  public operator fun invoke(owner: String, repo: String, tag: String, assetName: String): Unit = add(owner, repo, tag, assetName)
 }

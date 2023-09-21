@@ -26,12 +26,13 @@ import org.gradle.kotlin.dsl.property
 import xyz.jpenilla.runtask.pluginsapi.DownloadPluginsSpec
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 import xyz.jpenilla.runtask.task.AbstractRun
+import xyz.jpenilla.runtask.task.RunWithPlugins
 import javax.inject.Inject
 
 public abstract class RunExtension @Inject constructor(private val objects: ObjectFactory) {
   /**
    * By default, Run Paper/Velocity/Waterfall will attempt to discover your plugin `jar` or `shadowJar` and automatically
-   * add it to the [AbstractRun.pluginJars] file collection. In some configurations, this behavior may not be desired,
+   * add it to the [RunWithPlugins.pluginJars] file collection. In some configurations, this behavior may not be desired,
    * and therefore this option exists to disable it.
    *
    * Note that the plugin jar discovery behavior is only applicable for the automatically registered default run
@@ -46,10 +47,18 @@ public abstract class RunExtension @Inject constructor(private val objects: Obje
     detectPluginJar.set(false)
   }
 
+  /**
+   * Create a plugin download spec, and configure it with the provided action.
+   */
   public fun downloadPluginsSpec(): DownloadPluginsSpec {
     return objects.newInstance(DownloadPluginsSpec::class, objects.polymorphicDomainObjectContainer(PluginApi::class))
   }
 
+  /**
+   * Create a plugin download spec, and configure it with the provided action.
+   *
+   * @param config
+   */
   public fun downloadPluginsSpec(config: Action<DownloadPluginsSpec>): DownloadPluginsSpec {
     val spec = downloadPluginsSpec()
     config.execute(spec)
@@ -57,6 +66,11 @@ public abstract class RunExtension @Inject constructor(private val objects: Obje
   }
 
   // For groovy
+  /**
+   * Create a plugin download spec, and configure it with the provided closure.
+   *
+   * @param config configuration closure
+   */
   public fun downloadPluginsSpec(config: Closure<DownloadPluginsSpec>): DownloadPluginsSpec {
     val spec = downloadPluginsSpec()
     config.delegate = spec

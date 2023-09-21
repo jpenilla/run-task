@@ -43,6 +43,14 @@ import java.util.SortedMap
 import java.util.SortedSet
 import javax.inject.Inject
 
+/**
+ * A set of plugins to download from various sources.
+ *
+ * Provides convenience methods for adding plugins from Hangar API,
+ * Modrinth API, GitHub releases, and URLs.
+ *
+ * Combine [DownloadPluginsSpec]s using [from].
+ */
 public abstract class DownloadPluginsSpec @Inject constructor(
   private val registry: ExtensiblePolymorphicDomainObjectContainer<PluginApi<*, *>>
 ) : PolymorphicDomainObjectContainer<PluginApi<*, *>> by registry {
@@ -61,15 +69,20 @@ public abstract class DownloadPluginsSpec @Inject constructor(
     registry.registerFactory(UrlPluginProvider::class) { name -> objects.newInstance(UrlPluginProviderImpl::class, name) }
 
     register("hangar", HangarApi::class) {
-      url.set("https://hangar.papermc.io")
+      url.set(HangarApi.DEFAULT_URL)
     }
     register("modrinth", ModrinthApi::class) {
-      url.set("https://api.modrinth.com")
+      url.set(ModrinthApi.DEFAULT_URL)
     }
     register("github", GitHubApi::class)
     register("url", UrlPluginProvider::class)
   }
 
+  /**
+   * Copy all downloads from the provided [DownloadPluginsSpec] into this [DownloadPluginsSpec].
+   *
+   * @param spec
+   */
   public fun from(spec: DownloadPluginsSpec) {
     fun <T : PluginApi<*, *>> cast(o: Any): T {
       @Suppress("UNCHECKED_CAST")
@@ -93,46 +106,79 @@ public abstract class DownloadPluginsSpec @Inject constructor(
 
   // hangar extensions
 
+  /**
+   * Access to the built-in [HangarApi].
+   */
   @get:Internal
   public val hangar: NamedDomainObjectProvider<HangarApi>
     get() = named("hangar", HangarApi::class)
+
+  /**
+   * Add a plugin download.
+   *
+   * @param plugin plugin name on Hangar
+   * @param version plugin version
+   */
   public fun hangar(plugin: String, version: String) {
-    named("hangar", HangarApi::class) {
-      add(plugin, version)
-    }
+    hangar.configure { add(plugin, version) }
   }
 
   // modrinth extensions
 
+  /**
+   * Access to the built-in [ModrinthApi].
+   */
   @get:Internal
   public val modrinth: NamedDomainObjectProvider<ModrinthApi>
     get() = named("modrinth", ModrinthApi::class)
+
+  /**
+   * Add a plugin download.
+   *
+   * @param id plugin id on Modrinth
+   * @param version plugin version id
+   */
   public fun modrinth(id: String, version: String) {
-    named("modrinth", ModrinthApi::class) {
-      add(id, version)
-    }
+    modrinth.configure { add(id, version) }
   }
 
   // github extensions
 
+  /**
+   * Access to the built-in [GitHubApi].
+   */
   @get:Internal
   public val github: NamedDomainObjectProvider<GitHubApi>
     get() = named("github", GitHubApi::class)
+
+  /**
+   * Add a release artifact plugin download.
+   *
+   * @param owner repo owner
+   * @param repo repo name
+   * @param tag release tag
+   * @param assetName asset file name
+   */
   public fun github(owner: String, repo: String, tag: String, assetName: String) {
-    named("github", GitHubApi::class) {
-      add(owner, repo, tag, assetName)
-    }
+    github.configure { add(owner, repo, tag, assetName) }
   }
 
   // url extensions
 
+  /**
+   * Access to the built-in [UrlPluginProvider].
+   */
   @get:Internal
   public val url: NamedDomainObjectProvider<UrlPluginProvider>
     get() = named("url", UrlPluginProvider::class)
-  public fun url(url: String) {
-    named("url", UrlPluginProvider::class) {
-      add(url)
-    }
+
+  /**
+   * Add a plugin download.
+   *
+   * @param urlString download URL
+   */
+  public fun url(urlString: String) {
+    url.configure { add(urlString) }
   }
 
   // All zero-arg methods must be annotated or Gradle will think it's an input

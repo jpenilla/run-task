@@ -20,10 +20,27 @@ import org.gradle.api.provider.Property
 import xyz.jpenilla.runtask.pluginsapi.HangarApiDownload
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 
+/**
+ * [PluginApi] implementation using the [Hangar](https://hangar.papermc.io/) API.
+ */
 public interface HangarApi : PluginApi<HangarApi, HangarApiDownload> {
+  public companion object {
+    /**
+     * Default value for [url].
+     */
+    public const val DEFAULT_URL: String = "https://hangar.papermc.io"
+  }
+
+  /**
+   * Hangar API URL.
+   */
   public val url: Property<String>
 
+  /**
+   * Add a plugin download.
+   *
+   * @param plugin plugin name on Hangar
+   * @param version plugin version
+   */
   public fun add(plugin: String, version: String)
-
-  public operator fun invoke(plugin: String, version: String): Unit = add(plugin, version)
 }

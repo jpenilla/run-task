@@ -20,10 +20,24 @@ import org.gradle.api.provider.Property
 import xyz.jpenilla.runtask.pluginsapi.ModrinthApiDownload
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 
+/**
+ * [PluginApi] implementation using the [Modrinth](https://modrinth.com/) API.
+ */
 public interface ModrinthApi : PluginApi<ModrinthApi, ModrinthApiDownload> {
+  public companion object {
+    /**
+     * Default value for [url].
+     */
+    public const val DEFAULT_URL: String = "https://api.modrinth.com"
+  }
+
   public val url: Property<String>
 
+  /**
+   * Add a plugin download.
+   *
+   * @param id plugin id on Modrinth
+   * @param version plugin version id
+   */
   public fun add(id: String, version: String)
-
-  public operator fun invoke(id: String, version: String): Unit = add(id, version)
 }

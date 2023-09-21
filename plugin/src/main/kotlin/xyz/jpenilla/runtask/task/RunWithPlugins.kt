@@ -52,10 +52,16 @@ public abstract class RunWithPlugins : AbstractRun() {
   @get:Classpath
   public abstract val pluginJars: ConfigurableFileCollection
 
+  /**
+   * The spec of plugins to download and load in addition to [pluginJars].
+   */
   @get:Nested
   public lateinit var downloadPlugins: DownloadPluginsSpec
     private set
 
+  /**
+   * The service used to download plugins in the [downloadPlugins] spec.
+   */
   @get:Internal
   public abstract val pluginDownloadService: Property<PluginDownloadService>
 
@@ -103,11 +109,21 @@ public abstract class RunWithPlugins : AbstractRun() {
     pluginJars.from(jars)
   }
 
+  /**
+   * Configure [downloadPlugins] with the provided action.
+   *
+   * @param config configuration action
+   */
   public fun downloadPlugins(config: Action<DownloadPluginsSpec>) {
     config.execute(downloadPlugins)
   }
 
   // For groovy
+  /**
+   * Configure [downloadPlugins] with the provided action.
+   *
+   * @param config configuration action
+   */
   public fun downloadPlugins(config: Closure<DownloadPluginsSpec>) {
     config.delegate = downloadPlugins
     config.run()

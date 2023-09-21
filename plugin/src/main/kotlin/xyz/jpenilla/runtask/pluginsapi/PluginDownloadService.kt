@@ -30,8 +30,8 @@ import xyz.jpenilla.runtask.util.sharedCaches
 import java.nio.file.Path
 
 /**
- * Service that downloads and caches plugin jars. The included implementation is for the Hangar API, Modrinth API, and
- * the GitHub Releases API.
+ * Service that downloads and caches plugin jars. The included implementation is for the Hangar API, Modrinth API,
+ * GitHub Releases, and plain URLs.
  */
 public interface PluginDownloadService : BuildService<PluginDownloadService.Parameters> {
   public interface Parameters : BuildServiceParameters {
@@ -47,11 +47,17 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
     WATERFALL
   }
 
+  /**
+   * Resolve a plugin.
+   *
+   * @param project project to use for context
+   * @param download plugin download
+   */
   public fun resolvePlugin(project: Project, download: PluginApiDownload): Path
 
   public companion object {
-    public fun registerIfAbsent(projName: String, project: Project, config: Action<in Parameters>): Provider<out PluginDownloadService> {
-      val serviceName = "$projName-plugins-downloads_service"
+    public fun registerIfAbsent(namePrefix: String, project: Project, config: Action<in Parameters>): Provider<out PluginDownloadService> {
+      val serviceName = "$namePrefix-plugin_download_service"
       return project.gradle.sharedServices.registerIfAbsent(serviceName, PluginDownloadServiceImpl::class) {
         config.execute(parameters)
         parameters {
@@ -61,6 +67,11 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
       }
     }
 
+    /**
+     * Get the default [PluginDownloadService] used to download Paper/Folia plugins.
+     *
+     * @param project project
+     */
     public fun paper(project: Project): Provider<out PluginDownloadService> {
       return registerIfAbsent(Projects.PAPER, project) {
         platformType.set(PlatformType.PAPER)
@@ -68,6 +79,11 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
       }
     }
 
+    /**
+     * Get the default [PluginDownloadService] used to download Velocity plugins.
+     *
+     * @param project project
+     */
     public fun velocity(project: Project): Provider<out PluginDownloadService> {
       return registerIfAbsent(Projects.VELOCITY, project) {
         platformType.set(PlatformType.VELOCITY)
@@ -75,6 +91,11 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
       }
     }
 
+    /**
+     * Get the default [PluginDownloadService] used to download Waterfall plugins.
+     *
+     * @param project project
+     */
     public fun waterfall(project: Project): Provider<out PluginDownloadService> {
       return registerIfAbsent(Projects.WATERFALL, project) {
         platformType.set(PlatformType.WATERFALL)
