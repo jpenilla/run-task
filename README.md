@@ -8,7 +8,7 @@ software along with your plugin built by Gradle. This provides a streamlined met
 <details>
 <summary>Run Paper</summary>
 
-[![latest release](https://img.shields.io/maven-metadata/v?label=gradle%20plugin%20portal&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fxyz%2Fjpenilla%2Frun-paper%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/xyz.jpenilla.run-paper)
+[![latest release](https://img.shields.io/gradle-plugin-portal/v/xyz.jpenilla.run-paper)](https://plugins.gradle.org/plugin/xyz.jpenilla.run-paper)
 
 ### Basic Usage
 
@@ -36,7 +36,7 @@ You can now run a Paper server simply by invoking the `runServer` task!
 <details>
 <summary>Run Velocity</summary>
 
-[![latest release](https://img.shields.io/maven-metadata/v?label=gradle%20plugin%20portal&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fxyz%2Fjpenilla%2Frun-velocity%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/xyz.jpenilla.run-velocity)
+[![latest release](https://img.shields.io/gradle-plugin-portal/v/xyz.jpenilla.run-velocity)](https://plugins.gradle.org/plugin/xyz.jpenilla.run-velocity)
 
 ### Basic Usage
 
@@ -64,7 +64,7 @@ You can now run a Velocity proxy simply by invoking the `runVelocity` task!
 <details>
 <summary>Run Waterfall</summary>
 
-[![latest release](https://img.shields.io/maven-metadata/v?label=gradle%20plugin%20portal&metadataUrl=https%3A%2F%2Fplugins.gradle.org%2Fm2%2Fxyz%2Fjpenilla%2Frun-waterfall%2Fmaven-metadata.xml)](https://plugins.gradle.org/plugin/xyz.jpenilla.run-waterfall)
+[![latest release](https://img.shields.io/gradle-plugin-portal/v/xyz.jpenilla.run-waterfall)](https://plugins.gradle.org/plugin/xyz.jpenilla.run-waterfall)
 
 ### Basic Usage
 
