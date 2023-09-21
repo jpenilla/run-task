@@ -241,6 +241,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
       connection.connect()
 
       val status = connection.responseCode
+      val displayName = ctx.version.displayName ?: ctx.version.fileName
       if (status == HttpURLConnection.HTTP_NOT_MODIFIED) {
         // not modified
         ctx.setter(ctx.version.copy(lastUpdateCheck = Instant.now().toEpochMilli()))
@@ -254,7 +255,6 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
         }
 
         val opName = "${ctx.baseUrl}:${ctx.version.fileName}"
-        val displayName = ctx.version.displayName ?: ctx.version.fileName
         val start = Instant.now()
         LOGGER.lifecycle("Downloading {}...", displayName)
         when (val res = Downloader(url, ctx.targetFile, displayName, opName).download(ctx.project, connection)) {
@@ -268,7 +268,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
         return ctx.targetFile
       }
 
-      throw IllegalStateException("Failed to download ${ctx.version.fileName}, status code: $status")
+      throw IllegalStateException("Failed to download $displayName, status code: $status")
     } finally {
       connection.disconnect()
     }
