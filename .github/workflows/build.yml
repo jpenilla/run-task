@@ -48,3 +48,5 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_pluginPortalApiKey: "${{ secrets.GRADLE_PLUGIN_PORTAL_KEY }}"
           ORG_GRADLE_PROJECT_pluginPortalApiSecret: "${{ secrets.GRADLE_PLUGIN_PORTAL_SECRET }}"
+          ORG_GRADLE_PROJECT_signingKey: "${{ secrets.SIGNING_KEY }}"
+          ORG_GRADLE_PROJECT_signingPassword: "${{ secrets.SIGNING_PASSWORD }}"
