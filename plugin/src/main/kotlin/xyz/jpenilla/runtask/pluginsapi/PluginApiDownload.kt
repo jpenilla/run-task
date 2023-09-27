@@ -18,6 +18,7 @@ package xyz.jpenilla.runtask.pluginsapi
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import xyz.jpenilla.runtask.util.HashingAlgorithm
 import xyz.jpenilla.runtask.util.calculateHash
 import xyz.jpenilla.runtask.util.toHexString
@@ -171,5 +172,48 @@ public abstract class UrlDownload : PluginApiDownload() {
 
   internal fun urlHash(): String {
     return toHexString(url.get().byteInputStream().calculateHash(HashingAlgorithm.SHA1))
+  }
+}
+
+public abstract class JenkinsDownload : PluginApiDownload() {
+
+  @get:Input
+  public abstract val baseUrl: Property<String>
+
+  @get:Input
+  public abstract val job: Property<String>
+
+  @get:Input @get:Optional
+  public abstract val artifactRegex: Property<Regex>
+
+  @get:Input @get:Optional
+  public abstract val build: Property<String>
+
+  override fun toString(): String {
+    return "JenkinsDownload(baseUrl=$baseUrl, job=$job, artifactRegex=$artifactRegex, build=$build)"
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) {
+      return true
+    }
+    if (javaClass != other?.javaClass) {
+      return false
+    }
+
+    other as JenkinsDownload
+
+    return baseUrl.get() == other.baseUrl.get() &&
+      job.get() == other.job.get() &&
+      artifactRegex.orNull == other.artifactRegex.orNull &&
+      build.orNull == other.build.orNull
+  }
+
+  override fun hashCode(): Int {
+    var result = baseUrl.hashCode()
+    result = 31 * result + job.hashCode()
+    result = 31 * result + artifactRegex.hashCode()
+    result = 31 * result + build.hashCode()
+    return result
   }
 }

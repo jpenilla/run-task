@@ -33,6 +33,8 @@ import xyz.jpenilla.runtask.pluginsapi.github.GitHubApi
 import xyz.jpenilla.runtask.pluginsapi.github.GitHubApiImpl
 import xyz.jpenilla.runtask.pluginsapi.hangar.HangarApi
 import xyz.jpenilla.runtask.pluginsapi.hangar.HangarApiImpl
+import xyz.jpenilla.runtask.pluginsapi.jenkins.JenkinsPluginProvider
+import xyz.jpenilla.runtask.pluginsapi.jenkins.JenkinsPluginProviderImpl
 import xyz.jpenilla.runtask.pluginsapi.modrinth.ModrinthApi
 import xyz.jpenilla.runtask.pluginsapi.modrinth.ModrinthApiImpl
 import xyz.jpenilla.runtask.pluginsapi.url.UrlPluginProvider
@@ -67,6 +69,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
     registry.registerFactory(ModrinthApi::class) { name -> objects.newInstance(ModrinthApiImpl::class, name) }
     registry.registerFactory(GitHubApi::class) { name -> objects.newInstance(GitHubApiImpl::class, name) }
     registry.registerFactory(UrlPluginProvider::class) { name -> objects.newInstance(UrlPluginProviderImpl::class, name) }
+    registry.registerFactory(JenkinsPluginProvider::class) { name -> objects.newInstance(JenkinsPluginProviderImpl::class, name) }
 
     register("hangar", HangarApi::class) {
       url.set(HangarApi.DEFAULT_URL)
@@ -76,6 +79,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
     }
     register("github", GitHubApi::class)
     register("url", UrlPluginProvider::class)
+    register("jenkins", JenkinsPluginProvider::class)
   }
 
   /**
@@ -96,6 +100,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
         is ModrinthApi -> ModrinthApi::class
         is GitHubApi -> GitHubApi::class
         is UrlPluginProvider -> UrlPluginProvider::class
+        is JenkinsPluginProvider -> JenkinsPluginProvider::class
         else -> throw IllegalStateException("Unknown PluginApi type: ${api.javaClass.name}")
       }
       configure(name, type) {
@@ -179,6 +184,27 @@ public abstract class DownloadPluginsSpec @Inject constructor(
    */
   public fun url(urlString: String) {
     url.configure { add(urlString) }
+  }
+
+  // jenkins extensions
+
+  /**
+   * Access to the built-in [JenkinsPluginProvider].
+   */
+  @get:Internal
+  public val jenkins: NamedDomainObjectProvider<JenkinsPluginProvider>
+    get() = named("jenkins", JenkinsPluginProvider::class)
+
+  /**
+   * Add a plugin download.
+   *
+   * @param baseUrl The root url to the jenkins instance
+   * @param job The id of the target job to download the plugin from
+   * @param artifactRegex In case multiple artifacts are provided, a regex to pick the correct artifact
+   * @param build A specific build for the [job] or the lastSuccessfulBuild if none provided
+   */
+  public fun jenkins(baseUrl: String, job: String, artifactRegex: Regex? = null, build: String? = null) {
+    jenkins.configure { add(baseUrl, job, artifactRegex, build) }
   }
 
   // All zero-arg methods must be annotated or Gradle will think it's an input

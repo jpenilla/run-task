@@ -39,6 +39,10 @@ internal object Constants {
   const val MODRINTH_PLUGIN_DIR = "modrinth"
   const val GITHUB_PLUGIN_DIR = "github"
   const val URL_PLUGIN_DIR = "url"
+  const val JENKINS_PLUGIN_DIR = "jenkins"
+
+  const val JENKINS_LAST_SUCCESSFUL_BUILD = "lastSuccessfulBuild"
+  const val JENKINS_REST_ENDPOINT = "%s/%s/api/json?tree=artifacts[relativePath]"
 
   object Plugins {
     const val SHADOW_PLUGIN_ID = "com.github.johnrengelman.shadow"
