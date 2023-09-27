@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
-import groovy.json.JsonSlurper
 import org.gradle.api.Project
 import org.gradle.api.logging.Logging
 import xyz.jpenilla.runtask.util.Constants
@@ -135,20 +134,22 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val setter: (PluginVersion) -> Unit = { versions[build] = it }
 
     val downloadUrlSupplier: () -> String = supplier@{
-      val artifacts = (JsonSlurper().parse(restEndpoint.toURL()) as Map<*, *>)["artifacts"] as List<*>
+      val artifacts = mapper.readValue<JenkinsBuildResponse>(restEndpoint.toURL()).artifacts
       if (artifacts.isEmpty()) {
         throw IllegalStateException("No artifacts provided for build $build at $jobUrl")
       }
       if (artifacts.size == 1) {
-        return@supplier "$jobUrl/$build/artifact/${artifacts[0]}"
+        val path = artifacts.first().relativePath
+        if (regex != null && !(regex.containsMatchIn(path))) {
+          throw NullPointerException("Regex does not match only-found artifact: $path")
+        }
+        return@supplier "$jobUrl/$build/artifact/$path"
       }
       if (regex == null) {
         throw NullPointerException("Regex is null but multiple artifacts were found for $jobUrl/$build")
       }
-      val fileNames = artifacts
-        .map { it as Map<*, *> }
-        .map { it["relativePath"] as String }
-      val artifact = fileNames.firstOrNull { regex.containsMatchIn(it) } ?: throw NullPointerException("Failed to find artifact for regex ($regex) - Artifacts are: ${fileNames.joinToString(", ")}")
+      val artifactPaths = artifacts.map { it.relativePath }
+      val artifact = artifactPaths.firstOrNull { regex.containsMatchIn(it) } ?: throw NullPointerException("Failed to find artifact for regex ($regex) - Artifacts are: ${artifactPaths.joinToString(", ")}")
       "$jobUrl/$build/artifact/$artifact"
     }
     val ctx = DownloadCtx(project, jobUrl, downloadUrlSupplier, targetDir, targetFile, version, setter)
@@ -382,6 +383,15 @@ private fun GitHubRepo(): GitHubRepo = HashMap()
 private typealias JenkinsProvider = MutableMap<String, PluginVersions>
 
 private fun JenkinsProvider(): JenkinsProvider = HashMap()
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class JenkinsBuildResponse(
+  val artifacts: List<Artifact>
+) {
+  data class Artifact(
+    val relativePath: String
+  )
+}
 
 // general types:
 private typealias PluginVersions = MutableMap<String, PluginVersion>
