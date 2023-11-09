@@ -30,12 +30,16 @@ import xyz.jpenilla.runtask.util.calculateHash
 import xyz.jpenilla.runtask.util.path
 import xyz.jpenilla.runtask.util.prettyPrint
 import xyz.jpenilla.runtask.util.toHexString
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URI
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.time.Duration
 import java.time.Instant
 import java.util.Locale
+import java.util.jar.JarFile
 import kotlin.io.path.bufferedReader
 import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createDirectories
@@ -263,6 +267,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
         }
 
         val etagValue: String? = connection.getHeaderField("ETag")
+        requireValidJarFile(ctx, displayName)
         ctx.setter(ctx.version.copy(lastUpdateCheck = Instant.now().toEpochMilli(), etag = etagValue))
         writeManifest()
         return ctx.targetFile
@@ -272,6 +277,32 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     } finally {
       connection.disconnect()
     }
+  }
+
+  private fun requireValidJarFile(ctx: DownloadCtx, displayName: String) {
+    val invalidPath = ctx.targetFile.resolveSibling(ctx.targetFile.fileName.toString() + ".invalid-not-jar")
+
+    try {
+      JarFile(ctx.targetFile.toFile()).use {}
+    } catch (thr: Throwable) {
+      // Leave behind invalid jar (for debugging purposes), but not at destination
+      // path, so it won't be used again later in the case it's from a provider
+      // that doesn't provide hashes
+      try {
+        Files.move(ctx.targetFile, invalidPath, StandardCopyOption.REPLACE_EXISTING)
+      } catch (e: IOException) {
+        thr.addSuppressed(e)
+        try {
+          Files.deleteIfExists(ctx.targetFile)
+        } catch (e: IOException) {
+          thr.addSuppressed(e)
+        }
+      }
+      throw IllegalStateException("Downloaded file for $displayName is not a valid jar file.", thr)
+    }
+
+    // Delete any left behind invalid jars if we somehow get a valid jar
+    Files.deleteIfExists(invalidPath)
   }
 
   private data class DownloadCtx(
