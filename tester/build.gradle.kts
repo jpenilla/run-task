@@ -13,6 +13,7 @@ val paperPlugins = runPaper.downloadPluginsSpec {
   github("jpenilla", "MiniMOTD", "v2.0.13", "minimotd-bukkit-2.0.13.jar")
   hangar("squaremap", "1.2.0")
   url("https://download.luckperms.net/1515/bukkit/loader/LuckPerms-Bukkit-5.4.102.jar")
+  jenkins("https://ci.athion.net", "FastAsyncWorldEdit", Regex("Bukkit"))
 }
 
 tasks {

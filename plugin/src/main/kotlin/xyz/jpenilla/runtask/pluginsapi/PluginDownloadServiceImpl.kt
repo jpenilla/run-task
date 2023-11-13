@@ -93,6 +93,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
       is ModrinthApiDownload -> resolveModrinthPlugin(project, download)
       is GitHubApiDownload -> resolveGitHubPlugin(project, download)
       is UrlDownload -> resolveUrl(project, download)
+      is JenkinsDownload -> resolveJenkins(project, download)
     }
   }
 
@@ -108,7 +109,54 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val version = manifest.urlProvider[urlHash] ?: PluginVersion(fileName = "$urlHash.jar", displayName = download.url.get())
     val targetFile = targetDir.resolve(version.fileName)
     val setter: (PluginVersion) -> Unit = { manifest.urlProvider[urlHash] = it }
-    val ctx = DownloadCtx(project, "url", download.url.get(), targetDir, targetFile, version, setter)
+    val ctx = DownloadCtx(project, "url", { download.url.get() }, targetDir, targetFile, version, setter)
+    return download(ctx)
+  }
+
+  private fun resolveJenkins(project: Project, download: JenkinsDownload): Path {
+    val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
+    val targetDir = cacheDir.resolve(Constants.JENKINS_PLUGIN_DIR)
+
+    val baseUrl = download.baseUrl.get().trimEnd('/')
+    val job = download.job.get()
+    val regex = download.artifactRegex.orNull
+    val jobUrl = "$baseUrl/job/$job"
+    val build = download.build.getOrElse(
+      URI("$jobUrl/${Constants.JENKINS_LAST_SUCCESSFUL_BUILD}/buildNumber")
+        .toURL().readText()
+    )
+    val restEndpoint = URI(Constants.JENKINS_REST_ENDPOINT.format(jobUrl, build))
+
+    val provider = manifest.jenkinsProvider.computeIfAbsent(baseUrl) { JenkinsProvider() }
+    val versions = provider.computeIfAbsent(job) { PluginVersions() }
+    val version = versions[build] ?: PluginVersion(
+      fileName = "$job-$build.jar",
+      displayName = "jenkins:$baseUrl/$job/$build"
+    )
+
+    val targetFile = targetDir.resolve(version.fileName)
+    val setter: (PluginVersion) -> Unit = { versions[build] = it }
+
+    val downloadUrlSupplier: () -> String = supplier@{
+      val artifacts = mapper.readValue<JenkinsBuildResponse>(restEndpoint.toURL()).artifacts
+      if (artifacts.isEmpty()) {
+        throw IllegalStateException("No artifacts provided for build $build at $jobUrl")
+      }
+      if (artifacts.size == 1) {
+        val path = artifacts.first().relativePath
+        if (regex != null && !(regex.containsMatchIn(path))) {
+          throw NullPointerException("Regex does not match only-found artifact: $path")
+        }
+        return@supplier "$jobUrl/$build/artifact/$path"
+      }
+      if (regex == null) {
+        throw NullPointerException("Regex is null but multiple artifacts were found for $jobUrl/$build")
+      }
+      val artifactPaths = artifacts.map { it.relativePath }
+      val artifact = artifactPaths.firstOrNull { regex.containsMatchIn(it) } ?: throw NullPointerException("Failed to find artifact for regex ($regex) - Artifacts are: ${artifactPaths.joinToString(", ")}")
+      "$jobUrl/$build/artifact/$artifact"
+    }
+    val ctx = DownloadCtx(project, jobUrl, downloadUrlSupplier, targetDir, targetFile, version, setter)
     return download(ctx)
   }
 
@@ -134,7 +182,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val downloadUrl = "$apiUrl/api/v1/projects/$apiPlugin/versions/$apiVersion/$platformType/download"
 
     val setter: (PluginVersion) -> Unit = { platform[apiVersion] = it }
-    val ctx = DownloadCtx(project, apiUrl, downloadUrl, targetDir, targetFile, version, setter)
+    val ctx = DownloadCtx(project, apiUrl, { downloadUrl }, targetDir, targetFile, version, setter)
     return download(ctx)
   }
 
@@ -156,7 +204,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
 
     val versionRequestUrl = "$apiUrl/v2/project/$apiPlugin/version/$apiVersion"
     val versionJsonPath = download(
-      DownloadCtx(project, apiUrl, versionRequestUrl, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it })
+      DownloadCtx(project, apiUrl, { versionRequestUrl }, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it })
     )
     val versionInfo = mapper.readValue<ModrinthVersionResponse>(versionJsonPath.toFile())
     val primaryFile = versionInfo.files.find { it.primary } ?: error("Could not find primary file for $download in $versionInfo")
@@ -169,7 +217,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val targetFile = targetDir.resolve(version.fileName)
 
     return download(
-      DownloadCtx(project, apiUrl, primaryFile.url, targetDir, targetFile, version, setter = { plugin[apiVersion] = it })
+      DownloadCtx(project, apiUrl, { primaryFile.url }, targetDir, targetFile, version, setter = { plugin[apiVersion] = it })
     )
   }
 
@@ -192,7 +240,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val downloadUrl = "https://github.com/$owner/$repo/releases/download/$tag/$asset"
 
     val setter: (PluginVersion) -> Unit = { tagProvider[asset] = it }
-    val ctx = DownloadCtx(project, "github.com", downloadUrl, targetDir, targetFile, version, setter)
+    val ctx = DownloadCtx(project, "github.com", { downloadUrl }, targetDir, targetFile, version, setter)
     return download(ctx)
   }
 
@@ -221,7 +269,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   }
 
   private fun downloadFile(ctx: DownloadCtx): Path {
-    val url = URI.create(ctx.downloadUrl).toURL()
+    val url = URI.create(ctx.downloadUrl()).toURL()
     val connection = url.openConnection() as HttpURLConnection
 
     try {
@@ -308,7 +356,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   private data class DownloadCtx(
     val project: Project,
     val baseUrl: String,
-    val downloadUrl: String,
+    val downloadUrl: () -> String,
     val targetDir: Path,
     val targetFile: Path,
     val version: PluginVersion,
@@ -321,7 +369,8 @@ private data class PluginsManifest(
   val hangarProviders: MutableMap<String, HangarProvider> = HashMap(),
   val modrinthProviders: MutableMap<String, ModrinthProvider> = HashMap(),
   val githubProvider: GitHubProvider = GitHubProvider(),
-  val urlProvider: PluginVersions = PluginVersions()
+  val urlProvider: PluginVersions = PluginVersions(),
+  val jenkinsProvider: MutableMap<String, JenkinsProvider> = HashMap()
 )
 
 // hangar types:
@@ -360,6 +409,20 @@ private fun GitHubOwner(): GitHubOwner = HashMap()
 private typealias GitHubRepo = MutableMap<String, PluginVersions>
 
 private fun GitHubRepo(): GitHubRepo = HashMap()
+
+// jenkins types:
+private typealias JenkinsProvider = MutableMap<String, PluginVersions>
+
+private fun JenkinsProvider(): JenkinsProvider = HashMap()
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+private data class JenkinsBuildResponse(
+  val artifacts: List<Artifact>
+) {
+  data class Artifact(
+    val relativePath: String
+  )
+}
 
 // general types:
 private typealias PluginVersions = MutableMap<String, PluginVersion>
