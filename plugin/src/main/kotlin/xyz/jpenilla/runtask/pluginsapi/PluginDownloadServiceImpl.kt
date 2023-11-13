@@ -156,7 +156,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
 
     val versionRequestUrl = "$apiUrl/v2/project/$apiPlugin/version/$apiVersion"
     val versionJsonPath = download(
-      DownloadCtx(project, apiUrl, versionRequestUrl, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it })
+      DownloadCtx(project, apiUrl, versionRequestUrl, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it }, requireValidJar = false)
     )
     val versionInfo = mapper.readValue<ModrinthVersionResponse>(versionJsonPath.toFile())
     val primaryFile = versionInfo.files.find { it.primary } ?: error("Could not find primary file for $download in $versionInfo")
@@ -280,6 +280,10 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   }
 
   private fun requireValidJarFile(ctx: DownloadCtx, displayName: String) {
+    if (!ctx.requireValidJar) {
+      return
+    }
+
     val invalidPath = ctx.targetFile.resolveSibling(ctx.targetFile.fileName.toString() + ".invalid-not-jar")
 
     try {
@@ -312,7 +316,8 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val targetDir: Path,
     val targetFile: Path,
     val version: PluginVersion,
-    val setter: (PluginVersion) -> Unit
+    val setter: (PluginVersion) -> Unit,
+    val requireValidJar: Boolean = true,
   )
 }
 
