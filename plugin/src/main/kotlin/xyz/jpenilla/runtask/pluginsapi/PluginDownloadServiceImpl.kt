@@ -227,6 +227,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     try {
       connection.instanceFollowRedirects = true
       connection.setRequestProperty("Accept", "application/octet-stream")
+      connection.setRequestProperty("User-Agent", Constants.USER_AGENT)
 
       if (ctx.targetFile.isRegularFile()) {
         if (ctx.version.lastUpdateCheck > 0 && ctx.version.hash?.check(ctx.targetFile) != false) {

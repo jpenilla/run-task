@@ -40,6 +40,8 @@ internal object Constants {
   const val GITHUB_PLUGIN_DIR = "github"
   const val URL_PLUGIN_DIR = "url"
 
+  const val USER_AGENT = "run-task"
+
   object Plugins {
     const val SHADOW_PLUGIN_ID = "com.github.johnrengelman.shadow"
     const val SHADOW_JAR_TASK_NAME = "shadowJar"
