@@ -1,12 +1,9 @@
-import ca.stellardrift.build.configurate.ConfigFormats
-import ca.stellardrift.build.configurate.catalog.PolyglotVersionCatalogExtension
-
-plugins {
-  id("ca.stellardrift.polyglot-version-catalogs") version "6.1.0"
+dependencyResolutionManagement {
+  versionCatalogs {
+    create("libs") {
+      from(files("../gradle/libs.versions.toml"))
+    }
+  }
 }
 
 rootProject.name = "run-task"
-
-extensions.configure<PolyglotVersionCatalogExtension> {
-  from(ConfigFormats.YAML, file("../gradle/libs.versions.yml"))
-}

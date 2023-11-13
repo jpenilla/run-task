@@ -2,10 +2,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   `kotlin-dsl`
-  id("com.gradle.plugin-publish")
-  id("net.kyori.indra")
-  id("net.kyori.indra.publishing.gradle-plugin")
-  id("net.kyori.indra.licenser.spotless")
+  alias(libs.plugins.gradle.plugin.publish)
+  alias(libs.plugins.indra)
+  alias(libs.plugins.indra.publishing.gradle.plugin)
+  alias(libs.plugins.indra.licenser.spotless)
 }
 
 group = "xyz.jpenilla"
