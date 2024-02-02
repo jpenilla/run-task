@@ -9,25 +9,25 @@ plugins {
 runPaper.folia.registerTask()
 
 val paperPlugins = runPaper.downloadPluginsSpec {
-  modrinth("carbon", "2.1.0-beta.21")
-  github("jpenilla", "MiniMOTD", "v2.0.13", "minimotd-bukkit-2.0.13.jar")
-  hangar("squaremap", "1.2.0")
-  url("https://download.luckperms.net/1515/bukkit/loader/LuckPerms-Bukkit-5.4.102.jar")
+  modrinth("carbon", "6dmNHzy8")
+  github("jpenilla", "MiniMOTD", "v2.1.0", "minimotd-bukkit-2.1.0.jar")
+  hangar("squaremap", "1.2.3")
+  url("https://download.luckperms.net/1530/bukkit/loader/LuckPerms-Bukkit-5.4.117.jar")
 }
 
 tasks {
   withType<RunServer> {
-    minecraftVersion("1.20.1")
+    minecraftVersion("1.20.4")
     runDirectory.set(layout.projectDirectory.dir("runServer"))
     downloadPlugins.from(paperPlugins)
   }
   runVelocity {
-    version("3.2.0-SNAPSHOT")
+    version("3.3.0-SNAPSHOT")
     runDirectory.set(layout.projectDirectory.dir("runVelocity"))
     downloadPlugins {
-      modrinth("minimotd", "OQpVrXXW")
-      hangar("Carbon", "2.1.0-beta.21")
-      url("https://download.luckperms.net/1515/velocity/LuckPerms-Velocity-5.4.102.jar")
+      modrinth("minimotd", "z8DFFJMR")
+      hangar("Carbon", "3.0.0-beta.26")
+      url("https://download.luckperms.net/1530/velocity/LuckPerms-Velocity-5.4.117.jar")
     }
   }
 }
