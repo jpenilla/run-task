@@ -5,7 +5,7 @@ indra-licenser-spotless = { id = "net.kyori.indra.licenser.spotless", version.re
 gradle-plugin-publish = { id = "com.gradle.plugin-publish", version = "1.2.1" }
 
 [versions]
-jackson = "2.16.1"
+jackson = "2.16.2"
 paperweight = "1.5.11"
 ktlint = "0.49.0"
 indra = "3.1.3"
