@@ -83,17 +83,20 @@ public abstract class RunPlugin : Plugin<Project> {
     }
   }
 
-  protected open fun findPluginJar(project: Project): Provider<RegularFile>? = when {
-    project.plugins.hasPlugin(Constants.Plugins.SHADOW_PLUGIN_ID) -> {
-      project.tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
-    }
-
-    else -> {
+  protected open fun findPluginJar(project: Project): Provider<RegularFile>? {
+    if (Constants.Plugins.SHADOW_JAR_TASK_NAME in project.tasks.names) {
       try {
-        project.tasks.named<AbstractArchiveTask>(JavaPlugin.JAR_TASK_NAME).flatMap { it.archiveFile }
-      } catch (ex: UnknownTaskException) {
-        null
+        return project.tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
+      } catch (ignore: Exception) {
       }
     }
+
+    return project.defaultJar()
+  }
+
+  private fun Project.defaultJar() = try {
+    project.tasks.named<AbstractArchiveTask>(JavaPlugin.JAR_TASK_NAME).flatMap { it.archiveFile }
+  } catch (ex: UnknownTaskException) {
+    null
   }
 }
