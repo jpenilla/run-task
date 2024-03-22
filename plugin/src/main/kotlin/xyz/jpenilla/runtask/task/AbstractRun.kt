@@ -96,6 +96,7 @@ public abstract class AbstractRun : JavaExec() {
     runDirectory.convention(layout.projectDirectory.dir("run"))
     build.convention(DownloadsAPIService.Build.Latest)
     systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", true)
+    systemProperty("xyz.jpenilla.run-task", true)
     init()
   }
 
