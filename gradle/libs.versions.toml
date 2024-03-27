@@ -6,7 +6,7 @@ gradle-plugin-publish = { id = "com.gradle.plugin-publish", version = "1.2.1" }
 
 [versions]
 jackson = "2.17.0"
-paperweight = "1.5.11"
+paperweight = "1.5.12"
 ktlint = "0.49.0"
 indra = "3.1.3"
 
