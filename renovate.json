@@ -3,24 +3,31 @@
   "extends": [
     "config:recommended"
   ],
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "fileMatch": ["README.md"],
-      "matchStrings": ["id\\(\"xyz.jpenilla.run-paper\\\"\\) version \\\"(?<currentValue>.*?)\\\"$"],
+      "matchStrings": ["id\\(\"xyz.jpenilla.run-paper\"\\) version \"(?<currentValue>.*?)\\\""],
       "depNameTemplate": "xyz.jpenilla.run-paper:xyz.jpenilla.run-paper.gradle.plugin",
-      "datasourceTemplate": "maven"
+      "datasourceTemplate": "maven",
+      "registryUrlTemplate": "https://plugins.gradle.org/m2/"
     },
     {
+      "customType": "regex",
       "fileMatch": ["README.md"],
-      "matchStrings": ["id\\(\"xyz.jpenilla.run-waterfall\\\"\\) version \\\"(?<currentValue>.*?)\\\"$"],
+      "matchStrings": ["id\\(\"xyz.jpenilla.run-waterfall\"\\) version \"(?<currentValue>.*?)\\\""],
       "depNameTemplate": "xyz.jpenilla.run-waterfall:xyz.jpenilla.run-waterfall.gradle.plugin",
-      "datasourceTemplate": "maven"
+      "datasourceTemplate": "maven",
+      "registryUrlTemplate": "https://plugins.gradle.org/m2/"
     },
     {
+      "customType": "regex",
       "fileMatch": ["README.md"],
-      "matchStrings": ["id\\(\"xyz.jpenilla.run-velocity\\\"\\) version \\\"(?<currentValue>.*?)\\\"$"],
+      "matchStrings": ["id\\(\"xyz.jpenilla.run-velocity\"\\) version \"(?<currentValue>.*?)\\\""],
       "depNameTemplate": "xyz.jpenilla.run-velocity:xyz.jpenilla.run-velocity.gradle.plugin",
-      "datasourceTemplate": "maven"
+      "datasourceTemplate": "maven",
+      "registryUrlTemplate": "https://plugins.gradle.org/m2/"
     }
+
   ]
 }
