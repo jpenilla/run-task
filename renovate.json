@@ -2,5 +2,25 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["README.md"],
+      "matchStrings": ["id\\(\"xyz.jpenilla.run-paper\\\"\\) version \\\"(?<currentValue>.*?)\\\"$"],
+      "depNameTemplate": "xyz.jpenilla.run-paper:xyz.jpenilla.run-paper.gradle.plugin",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "fileMatch": ["README.md"],
+      "matchStrings": ["id\\(\"xyz.jpenilla.run-waterfall\\\"\\) version \\\"(?<currentValue>.*?)\\\"$"],
+      "depNameTemplate": "xyz.jpenilla.run-waterfall:xyz.jpenilla.run-waterfall.gradle.plugin",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "fileMatch": ["README.md"],
+      "matchStrings": ["id\\(\"xyz.jpenilla.run-velocity\\\"\\) version \\\"(?<currentValue>.*?)\\\"$"],
+      "depNameTemplate": "xyz.jpenilla.run-velocity:xyz.jpenilla.run-velocity.gradle.plugin",
+      "datasourceTemplate": "maven"
+    }
   ]
 }
