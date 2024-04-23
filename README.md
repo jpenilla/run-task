@@ -17,7 +17,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-paper") version "2.2.2"
+  id("xyz.jpenilla.run-paper") version "2.2.4"
 }
 
 tasks {
@@ -25,7 +25,7 @@ tasks {
     // Configure the Minecraft version for our task.
     // This is the only required configuration besides applying the plugin.
     // Your plugin's jar (or shadowJar if present) will be used automatically.
-    minecraftVersion("1.20.2")
+    minecraftVersion("1.20.4")
   }
 }
 ```
@@ -45,7 +45,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-velocity") version "2.2.2"
+  id("xyz.jpenilla.run-velocity") version "2.2.4"
 }
 
 tasks {
@@ -53,7 +53,7 @@ tasks {
     // Configure the Velocity version for our task.
     // This is the only required configuration besides applying the plugin.
     // Your plugin's jar (or shadowJar if present) will be used automatically.
-    velocityVersion("3.2.0-SNAPSHOT")
+    velocityVersion("3.3.0-SNAPSHOT")
   }
 }
 ```
@@ -73,7 +73,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-waterfall") version "2.2.2"
+  id("xyz.jpenilla.run-waterfall") version "2.2.4"
 }
 
 tasks {
@@ -81,7 +81,7 @@ tasks {
     // Configure the Waterfall version for our task.
     // This is the only required configuration besides applying the plugin.
     // Your plugin's jar (or shadowJar if present) will be used automatically.
-    waterfallVersion("1.19")
+    waterfallVersion("1.20")
   }
 }
 ```
