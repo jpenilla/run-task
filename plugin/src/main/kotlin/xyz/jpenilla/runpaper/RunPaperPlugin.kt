@@ -19,6 +19,7 @@ package xyz.jpenilla.runpaper
 import io.papermc.paperweight.tasks.RemapJar
 import io.papermc.paperweight.userdev.PaperweightUserExtension
 import io.papermc.paperweight.util.constants.MOJANG_MAPPED_SERVER_RUNTIME_CONFIG
+import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.UnknownTaskException
 import org.gradle.api.file.RegularFile
@@ -110,9 +111,29 @@ public abstract class RunPaperPlugin : RunPlugin() {
       version.convention(paperweight.minecraftVersion)
     }
 
-    val runDevBundleServer = tasks.register<RunServer>(Constants.Tasks.RUN_DEV_BUNDLE_SERVER) {
+    val runTask = registerDevBundleRun(Constants.Tasks.RUN_DEV_BUNDLE_SERVER) {
       group = Constants.RUN_PAPER_TASK_GROUP
       description = "Run a Mojang mapped Paper server for plugin testing, by integrating with paperweight."
+    }
+    val deprecatedRunTask = registerDevBundleRun(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
+      description = "Deprecated equivalent of ${Constants.Tasks.RUN_DEV_BUNDLE_SERVER}"
+    }
+
+    afterEvaluate {
+      val op = Action<RunServer> {
+        if (runExtension.detectPluginJar.get()) {
+          pluginJars(tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
+        }
+      }
+      runTask.configure(op)
+      deprecatedRunTask.configure(op)
+    }
+  }
+
+  private fun Project.registerDevBundleRun(name: String, op: Action<RunServer>): TaskProvider<RunServer> {
+    val paperweight = extensions.getByType<PaperweightUserExtension>()
+
+    return tasks.register<RunServer>(name) {
       version.value(paperweight.minecraftVersion).disallowChanges()
 
       val serverRuntimeConfig = configurations.findByName(MOJANG_MAPPED_SERVER_RUNTIME_CONFIG)
@@ -128,17 +149,8 @@ public abstract class RunPaperPlugin : RunPlugin() {
         mainClass.value("org.bukkit.craftbukkit.Main").disallowChanges()
         runClasspath.from(serverRuntimeConfig).disallowChanges()
       }
-    }
-    tasks.register(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
-      dependsOn(runDevBundleServer)
-    }
 
-    afterEvaluate {
-      runDevBundleServer {
-        if (runExtension.detectPluginJar.get()) {
-          pluginJars(tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
-        }
-      }
+      op.execute(this)
     }
   }
 }
