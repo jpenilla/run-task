@@ -117,6 +117,10 @@ public abstract class RunPaperPlugin : RunPlugin() {
     }
     val deprecatedRunTask = registerDevBundleRun(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
       description = "Deprecated equivalent of ${Constants.Tasks.RUN_DEV_BUNDLE_SERVER}"
+      doFirst {
+        logger.error("The '${Constants.Tasks.RUN_MOJANG_MAPPED_SERVER}' task has been deprecated and replaced by '${Constants.Tasks.RUN_DEV_BUNDLE_SERVER}'.")
+        Thread.sleep(5000L)
+      }
     }
 
     afterEvaluate {
