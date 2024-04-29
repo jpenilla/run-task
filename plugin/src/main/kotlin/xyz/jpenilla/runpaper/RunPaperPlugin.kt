@@ -1,6 +1,6 @@
 /*
  * Run Task Gradle Plugins
- * Copyright (c) 2023 Jason Penilla
+ * Copyright (c) 2024 Jason Penilla
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.the
 import xyz.jpenilla.runpaper.task.RunServer
 import xyz.jpenilla.runtask.RunExtension
 import xyz.jpenilla.runtask.RunPlugin
@@ -89,7 +89,12 @@ public abstract class RunPaperPlugin : RunPlugin() {
 
   override fun findPluginJar(project: Project): Provider<RegularFile>? = when {
     project.plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) -> {
-      project.tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.outputJar }
+      val paperweight = project.extensions.getByType<PaperweightUserExtension>()
+      if (paperweight.minecraftVersion.get().minecraftVersionIsSameOrNewerThan(1, 20, 5)) {
+        super.findPluginJar(project)
+      } else {
+        project.tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.outputJar }
+      }
     }
 
     else -> super.findPluginJar(project)
@@ -99,13 +104,13 @@ public abstract class RunPaperPlugin : RunPlugin() {
     runServer: TaskProvider<RunServer>,
     runExtension: RunExtension
   ) {
-    val paperweight = the<PaperweightUserExtension>()
+    val paperweight = extensions.getByType<PaperweightUserExtension>()
 
     runServer {
       version.convention(paperweight.minecraftVersion)
     }
 
-    val runMojangMappedServer = tasks.register<RunServer>(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
+    val runDevBundleServer = tasks.register<RunServer>(Constants.Tasks.RUN_DEV_BUNDLE_SERVER) {
       group = Constants.RUN_PAPER_TASK_GROUP
       description = "Run a Mojang mapped Paper server for plugin testing, by integrating with paperweight."
       version.value(paperweight.minecraftVersion).disallowChanges()
@@ -124,9 +129,12 @@ public abstract class RunPaperPlugin : RunPlugin() {
         runClasspath.from(serverRuntimeConfig).disallowChanges()
       }
     }
+    tasks.register(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
+      dependsOn(runDevBundleServer)
+    }
 
     afterEvaluate {
-      runMojangMappedServer {
+      runDevBundleServer {
         if (runExtension.detectPluginJar.get()) {
           pluginJars(tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
         }

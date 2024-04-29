@@ -1,6 +1,6 @@
 /*
  * Run Task Gradle Plugins
- * Copyright (c) 2023 Jason Penilla
+ * Copyright (c) 2024 Jason Penilla
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,10 @@ internal object Constants {
 
     const val RUN_SERVER = "runServer"
     const val RUN_FOLIA = "runFolia"
+
+    @Deprecated("Replaced by runDevBundleServer for clarity", replaceWith = ReplaceWith("RUN_DEV_BUNDLE_SERVER"))
     const val RUN_MOJANG_MAPPED_SERVER = "runMojangMappedServer"
+    const val RUN_DEV_BUNDLE_SERVER = "runDevBundleServer"
     const val RUN_VELOCITY = "runVelocity"
     const val RUN_WATERFALL = "runWaterfall"
   }

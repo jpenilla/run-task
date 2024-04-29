@@ -1,6 +1,6 @@
 /*
  * Run Task Gradle Plugins
- * Copyright (c) 2023 Jason Penilla
+ * Copyright (c) 2024 Jason Penilla
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
+import xyz.jpenilla.runpaper.minecraftVersionIsSameOrNewerThan
 import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.RunWithPlugins
@@ -70,7 +71,7 @@ public abstract class RunServer : RunWithPlugins() {
     }
 
     // Disable gui if applicable
-    if (minecraftVersionIsSameOrNewerThan(1, 15)) {
+    if (version.get().minecraftVersionIsSameOrNewerThan(1, 15)) {
       args("--nogui")
     }
 
@@ -96,26 +97,7 @@ public abstract class RunServer : RunWithPlugins() {
       return !legacyPluginLoading.get()
     }
 
-    return minecraftVersionIsSameOrNewerThan(1, 16, 5)
-  }
-
-  private fun minecraftVersionIsSameOrNewerThan(vararg other: Int): Boolean {
-    val minecraft = version.get().split(".").map {
-      try {
-        it.toInt()
-      } catch (ex: NumberFormatException) {
-        return true
-      }
-    }
-
-    for ((current, target) in minecraft zip other.toList()) {
-      if (current < target) return false
-      if (current > target) return true
-      // If equal, check next subversion
-    }
-
-    // version is same
-    return true
+    return version.get().minecraftVersionIsSameOrNewerThan(1, 16, 5)
   }
 
   /**
