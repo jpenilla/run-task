@@ -17,7 +17,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-paper") version "2.2.4"
+  id("xyz.jpenilla.run-paper") version "2.3.0"
 }
 
 tasks {
@@ -45,7 +45,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-velocity") version "2.2.4"
+  id("xyz.jpenilla.run-velocity") version "2.3.0"
 }
 
 tasks {
@@ -73,7 +73,7 @@ In `build.gradle.kts`:
 ```kotlin
 plugins {
   // Apply the plugin
-  id("xyz.jpenilla.run-waterfall") version "2.2.4"
+  id("xyz.jpenilla.run-waterfall") version "2.3.0"
 }
 
 tasks {
