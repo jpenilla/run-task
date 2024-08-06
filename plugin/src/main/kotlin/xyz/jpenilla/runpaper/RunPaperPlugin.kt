@@ -99,23 +99,23 @@ public abstract class RunPaperPlugin : RunPlugin() {
 
   override fun findPluginJar(task: TaskProvider<out RunWithPlugins>, project: Project): Provider<RegularFile>? {
     if (project.plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID)) {
-        val paperweight = project.extensions.getByType<PaperweightUserExtension>()
-        try {
-          project.configurations.getByName(DEV_BUNDLE_CONFIG).resolve()
-        } catch (ex: Exception) {
-          val error = GradleException("Failed to resolve dev bundle, cannot setup dev bundle runs. If you are clearing the paperweight cache, this is expected and can be ignored.", ex)
-          logger.error(error.message, error)
-          task.configure {
-            doFirst { throw error }
-          }
-          return null
+      val paperweight = project.extensions.getByType<PaperweightUserExtension>()
+      try {
+        project.configurations.getByName(DEV_BUNDLE_CONFIG).resolve()
+      } catch (ex: Exception) {
+        val error = GradleException("Failed to resolve dev bundle, cannot setup dev bundle runs. If you are clearing the paperweight cache, this is expected and can be ignored.", ex)
+        logger.error(error.message, error)
+        task.configure {
+          doFirst { throw error }
         }
+        return null
+      }
 
-        return if (paperweight.minecraftVersion.get().minecraftVersionIsSameOrNewerThan(1, 20, 5)) {
-          super.findPluginJar(task, project)
-        } else {
-          project.tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.outputJar }
-        }
+      return if (paperweight.minecraftVersion.get().minecraftVersionIsSameOrNewerThan(1, 20, 5)) {
+        super.findPluginJar(task, project)
+      } else {
+        project.tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.outputJar }
+      }
     }
     return super.findPluginJar(task, project)
   }
