@@ -58,7 +58,7 @@ public abstract class RunPlugin : Plugin<Project> {
   ) {
     val action = {
       if (extension.detectPluginJar.get()) {
-        findPluginJar(project)?.let {
+        findPluginJar(this, project)?.let {
           configure { pluginJars(it) }
         }
       }
@@ -83,7 +83,7 @@ public abstract class RunPlugin : Plugin<Project> {
     }
   }
 
-  protected open fun findPluginJar(project: Project): Provider<RegularFile>? {
+  protected open fun findPluginJar(task: TaskProvider<out RunWithPlugins>, project: Project): Provider<RegularFile>? {
     if (Constants.Plugins.SHADOW_JAR_TASK_NAME in project.tasks.names) {
       try {
         return project.tasks.named<AbstractArchiveTask>(Constants.Plugins.SHADOW_JAR_TASK_NAME).flatMap { it.archiveFile }
