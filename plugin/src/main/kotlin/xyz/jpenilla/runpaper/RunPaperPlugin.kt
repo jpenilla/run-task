@@ -18,11 +18,15 @@ package xyz.jpenilla.runpaper
 
 import io.papermc.paperweight.tasks.RemapJar
 import io.papermc.paperweight.userdev.PaperweightUserExtension
+import io.papermc.paperweight.util.constants.DEV_BUNDLE_CONFIG
 import io.papermc.paperweight.util.constants.MOJANG_MAPPED_SERVER_RUNTIME_CONFIG
 import org.gradle.api.Action
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.UnknownTaskException
 import org.gradle.api.file.RegularFile
+import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.TaskProvider
@@ -35,10 +39,15 @@ import xyz.jpenilla.runpaper.task.RunServer
 import xyz.jpenilla.runtask.RunExtension
 import xyz.jpenilla.runtask.RunPlugin
 import xyz.jpenilla.runtask.service.DownloadsAPIService
+import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.sharedCaches
 
 public abstract class RunPaperPlugin : RunPlugin() {
+  private companion object {
+    private val logger: Logger = Logging.getLogger(RunPaperPlugin::class.java)
+  }
+
   override fun apply(target: Project) {
     super.apply(target)
 
@@ -88,17 +97,27 @@ public abstract class RunPaperPlugin : RunPlugin() {
     }
   }
 
-  override fun findPluginJar(project: Project): Provider<RegularFile>? = when {
-    project.plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) -> {
+  override fun findPluginJar(task: TaskProvider<out RunWithPlugins>, project: Project): Provider<RegularFile>? {
+    if (project.plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID)) {
       val paperweight = project.extensions.getByType<PaperweightUserExtension>()
-      if (paperweight.minecraftVersion.get().minecraftVersionIsSameOrNewerThan(1, 20, 5)) {
-        super.findPluginJar(project)
+      try {
+        project.configurations.getByName(DEV_BUNDLE_CONFIG).resolve()
+      } catch (ex: Exception) {
+        val error = GradleException("Failed to resolve dev bundle, cannot setup dev bundle runs. If you are clearing the paperweight cache, this is expected and can be ignored.", ex)
+        logger.error(error.message, error)
+        task.configure {
+          doFirst { throw error }
+        }
+        return null
+      }
+
+      return if (paperweight.minecraftVersion.get().minecraftVersionIsSameOrNewerThan(1, 20, 5)) {
+        super.findPluginJar(task, project)
       } else {
         project.tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.outputJar }
       }
     }
-
-    else -> super.findPluginJar(project)
+    return super.findPluginJar(task, project)
   }
 
   private fun Project.setupPaperweightCompat(
