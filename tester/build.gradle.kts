@@ -1,33 +1,54 @@
 import xyz.jpenilla.runpaper.task.RunServer
 
 plugins {
+  java
   id("xyz.jpenilla.run-paper")
   id("xyz.jpenilla.run-velocity")
   id("xyz.jpenilla.run-waterfall")
 }
 
+java.toolchain {
+  languageVersion = JavaLanguageVersion.of(21)
+}
+
 runPaper.folia.registerTask()
 
 val paperPlugins = runPaper.downloadPluginsSpec {
-  modrinth("carbon", "6dmNHzy8")
-  github("jpenilla", "MiniMOTD", "v2.1.0", "minimotd-bukkit-2.1.0.jar")
-  hangar("squaremap", "1.2.3")
-  url("https://download.luckperms.net/1530/bukkit/loader/LuckPerms-Bukkit-5.4.117.jar")
+  modrinth("carbon", "WPejrRaD")
+  github("jpenilla", "MiniMOTD", "v2.1.5", "minimotd-bukkit-2.1.5.jar")
+  hangar("squaremap", "1.3.4")
+  url("https://download.luckperms.net/1569/bukkit/loader/LuckPerms-Bukkit-5.4.152.jar")
 }
 
+val toolchains = javaToolchains
 tasks {
+  register<RunServer>("run1_8") {
+    version = "1.8.8"
+    runDirectory = layout.projectDirectory.dir("run1_8")
+    javaLauncher = toolchains.launcherFor { languageVersion = JavaLanguageVersion.of(8) }
+  }
+  register<RunServer>("run1_12") {
+    version = "1.12.2"
+    runDirectory = layout.projectDirectory.dir("run1_12")
+    javaLauncher = toolchains.launcherFor { languageVersion = JavaLanguageVersion.of(8) }
+  }
   withType<RunServer> {
-    minecraftVersion("1.20.4")
-    runDirectory.set(layout.projectDirectory.dir("runServer"))
+    version.convention("1.21.4")
+    runDirectory.convention(layout.projectDirectory.dir("runServer"))
+  }
+  runServer {
+    downloadPlugins.from(paperPlugins)
+  }
+  runPaper.folia.task {
     downloadPlugins.from(paperPlugins)
   }
   runVelocity {
-    version("3.3.0-SNAPSHOT")
-    runDirectory.set(layout.projectDirectory.dir("runVelocity"))
+    version = "3.4.0-SNAPSHOT"
+    runDirectory = layout.projectDirectory.dir("runVelocity")
     downloadPlugins {
-      modrinth("minimotd", "z8DFFJMR")
-      hangar("Carbon", "3.0.0-beta.26")
-      url("https://download.luckperms.net/1530/velocity/LuckPerms-Velocity-5.4.117.jar")
+      modrinth("minimotd", "nFRYRCht")
+      hangar("Carbon", "3.0.0-beta.27")
+      url("https://download.luckperms.net/1569/velocity/LuckPerms-Velocity-5.4.152.jar")
     }
   }
 }

@@ -26,6 +26,7 @@ import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.RunWithPlugins
 import xyz.jpenilla.runtask.util.FileCopyingPluginHandler
+import xyz.jpenilla.runtask.util.spec
 import java.io.File
 import java.nio.file.Path
 
@@ -61,6 +62,15 @@ public abstract class RunServer : RunWithPlugins() {
     downloadsApiService.convention(DownloadsAPIService.paper(project))
     pluginDownloadService.convention(PluginDownloadService.paper(project))
     displayName.convention("Paper")
+  }
+
+  override fun resolveBuild(): List<Path> {
+    val result = super.resolveBuild()
+    if (result.size != 1) {
+      // Default main class to CB main when the applied Paperclip classpath is resolved to multiple files
+      spec().mainClass.set(mainClass.orElse("org.bukkit.craftbukkit.Main"))
+    }
+    return result
   }
 
   override fun preExec(workingDir: Path) {

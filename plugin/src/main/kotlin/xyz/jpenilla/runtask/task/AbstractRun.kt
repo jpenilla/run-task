@@ -22,11 +22,13 @@ import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Optional
+import org.gradle.process.ExecOperations
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.util.path
 import java.io.File
@@ -88,6 +90,12 @@ public abstract class AbstractRun : JavaExec() {
   @get:Inject
   protected abstract val layout: ProjectLayout
 
+  @get:Inject
+  protected abstract val execOperations: ExecOperations
+
+  @get:Inject
+  protected abstract val providers: ProviderFactory
+
   init {
     init0()
   }
@@ -113,6 +121,15 @@ public abstract class AbstractRun : JavaExec() {
     super.exec()
   }
 
+  protected open fun resolveBuild(): List<Path> = downloadsApiService.get().resolveBuild(
+    project,
+    providers,
+    javaLauncher.get(),
+    execOperations,
+    version.get(),
+    build.get()
+  )
+
   private fun preExec() {
     standardInput = System.`in`
     workingDir(runDirectory)
@@ -123,11 +140,7 @@ public abstract class AbstractRun : JavaExec() {
       if (!version.isPresent) {
         error("'runClasspath' is empty and no version was specified for the '$name' task. Don't know what version to download.")
       }
-      downloadsApiService.get().resolveBuild(
-        project,
-        version.get(),
-        build.get()
-      )
+      resolveBuild()
     }
     classpath(selectedClasspath)
 
