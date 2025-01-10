@@ -84,4 +84,4 @@ internal fun Duration.prettyPrint(): String =
   toString()
     .substring(2)
     .replace("(\\d[HMS])(?!$)".toRegex(), "$1 ")
-    .toLowerCase(Locale.ENGLISH)
+    .lowercase(Locale.ENGLISH)

@@ -30,6 +30,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import java.util.Locale
 import kotlin.reflect.KClass
 
 internal fun Project.findJavaLauncher(): Provider<JavaLauncher>? {
@@ -59,3 +60,6 @@ internal fun <T : Any, U : T> PolymorphicDomainObjectContainer<T>.configure(
 }
 
 internal fun <T : Any, U : T> ExtensiblePolymorphicDomainObjectContainer<T>.registerFactory(type: KClass<U>, config: (String) -> U): Unit = registerFactory(type.java, config)
+
+internal fun String.capitalized(locale: Locale = Locale.ROOT): String =
+  replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }

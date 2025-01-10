@@ -23,6 +23,7 @@ import org.gradle.kotlin.dsl.registerIfAbsent
 import xyz.jpenilla.runtask.paperapi.DownloadsAPI
 import xyz.jpenilla.runtask.paperapi.Projects
 import xyz.jpenilla.runtask.util.Constants
+import xyz.jpenilla.runtask.util.capitalized
 import xyz.jpenilla.runtask.util.set
 import xyz.jpenilla.runtask.util.sharedCaches
 import java.nio.file.Path
@@ -80,7 +81,7 @@ public interface DownloadsAPIService {
     }
 
     private fun String.defaultDisplayName(): String =
-      split('-').joinToString(" ") { it.capitalize() }
+      split('-').joinToString(" ") { it.capitalized() }
 
     /**
      * Get the default [DownloadsAPIService] used to download Paper.

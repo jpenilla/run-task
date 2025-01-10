@@ -383,7 +383,7 @@ private data class Hash(
   val hash: String,
   val type: String
 ) {
-  fun type() = HashingAlgorithm.valueOf(type.toUpperCase(Locale.ENGLISH))
+  fun type() = HashingAlgorithm.valueOf(type.uppercase(Locale.ENGLISH))
 
   fun check(file: Path): Boolean = toHexString(file.calculateHash(type())) == hash
 }
