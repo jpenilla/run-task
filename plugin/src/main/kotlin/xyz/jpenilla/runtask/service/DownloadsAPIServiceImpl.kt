@@ -249,7 +249,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
       tempFile.moveTo(destination, StandardCopyOption.REPLACE_EXISTING)
     }
 
-    versionData.knownJars[buildNumber] = JarInfo(
+    versionData.knownJars[buildNumber] = BuildInfo(
       buildNumber,
       if (classpath == null) fileName else null,
       if (classpath == null) download.sha256 else null,
@@ -351,7 +351,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   private fun unknownVersion(version: String): Nothing =
     error("Unknown $displayName Version: $version")
 
-  private data class JarInfo(
+  private data class BuildInfo(
     val buildNumber: Int,
     val fileName: String?,
     val sha256: String?,
@@ -366,6 +366,6 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   private data class Version(
     val name: String,
     val lastUpdateCheck: Long = 0L,
-    val knownJars: MutableMap<Int, JarInfo> = HashMap(),
+    val knownJars: MutableMap<Int, BuildInfo> = HashMap(),
   )
 }
