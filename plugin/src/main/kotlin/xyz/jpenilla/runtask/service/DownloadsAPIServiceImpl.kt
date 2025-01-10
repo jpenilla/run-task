@@ -29,6 +29,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.process.ExecOperations
 import xyz.jpenilla.runtask.paperapi.DownloadsAPI
@@ -130,10 +131,10 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
 
   @Synchronized
   override fun resolveBuild(
-    project: Project,
     providers: ProviderFactory,
     javaLauncher: JavaLauncher,
     execOperations: ExecOperations,
+    progressLoggerFactory: ProgressLoggerFactory,
     version: String,
     build: DownloadsAPIService.Build
   ): List<Path> {
@@ -218,7 +219,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     val start = System.currentTimeMillis()
     val opName = "${parameters.downloadsEndpoint}:${parameters.downloadProject}"
 
-    when (val downloadResult = Downloader(downloadURL, tempFile, displayName, opName).download(project)) {
+    when (val downloadResult = Downloader(downloadURL, tempFile, displayName, opName).download(progressLoggerFactory)) {
       is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading {}, took {}.", displayName, Duration.ofMillis(System.currentTimeMillis() - start).prettyPrint())
       is Downloader.Result.Failure -> throw IllegalStateException("Failed to download $displayName.", downloadResult.throwable)
     }

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.gradle.api.Project
 import org.gradle.api.logging.Logging
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.Downloader
 import xyz.jpenilla.runtask.util.HashingAlgorithm
@@ -85,14 +86,14 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   }
 
   @Synchronized
-  override fun resolvePlugin(project: Project, download: PluginApiDownload): Path {
+  override fun resolvePlugin(progressLoggerFactory: ProgressLoggerFactory, download: PluginApiDownload): Path {
     manifest = loadOrCreateManifest()
 
     return when (download) {
-      is HangarApiDownload -> resolveHangarPlugin(project, download)
-      is ModrinthApiDownload -> resolveModrinthPlugin(project, download)
-      is GitHubApiDownload -> resolveGitHubPlugin(project, download)
-      is UrlDownload -> resolveUrl(project, download)
+      is HangarApiDownload -> resolveHangarPlugin(progressLoggerFactory, download)
+      is ModrinthApiDownload -> resolveModrinthPlugin(progressLoggerFactory, download)
+      is GitHubApiDownload -> resolveGitHubPlugin(progressLoggerFactory, download)
+      is UrlDownload -> resolveUrl(progressLoggerFactory, download)
     }
   }
 
@@ -101,18 +102,18 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   private val offlineMode: Boolean
     get() = parameters.offlineMode.get()
 
-  private fun resolveUrl(project: Project, download: UrlDownload): Path {
+  private fun resolveUrl(progressLoggerFactory: ProgressLoggerFactory, download: UrlDownload): Path {
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
     val targetDir = cacheDir.resolve(Constants.URL_PLUGIN_DIR)
     val urlHash = download.urlHash()
     val version = manifest.urlProvider[urlHash] ?: PluginVersion(fileName = "$urlHash.jar", displayName = download.url.get())
     val targetFile = targetDir.resolve(version.fileName)
     val setter: (PluginVersion) -> Unit = { manifest.urlProvider[urlHash] = it }
-    val ctx = DownloadCtx(project, "url", download.url.get(), targetDir, targetFile, version, setter)
+    val ctx = DownloadCtx(progressLoggerFactory, "url", download.url.get(), targetDir, targetFile, version, setter)
     return download(ctx)
   }
 
-  private fun resolveHangarPlugin(project: Project, download: HangarApiDownload): Path {
+  private fun resolveHangarPlugin(progressLoggerFactory: ProgressLoggerFactory, download: HangarApiDownload): Path {
     val platformType = parameters.platformType.get()
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
 
@@ -134,11 +135,11 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val downloadUrl = "$apiUrl/api/v1/projects/$apiPlugin/versions/$apiVersion/$platformType/download"
 
     val setter: (PluginVersion) -> Unit = { platform[apiVersion] = it }
-    val ctx = DownloadCtx(project, apiUrl, downloadUrl, targetDir, targetFile, version, setter)
+    val ctx = DownloadCtx(progressLoggerFactory, apiUrl, downloadUrl, targetDir, targetFile, version, setter)
     return download(ctx)
   }
 
-  private fun resolveModrinthPlugin(project: Project, download: ModrinthApiDownload): Path {
+  private fun resolveModrinthPlugin(progressLoggerFactory: ProgressLoggerFactory, download: ModrinthApiDownload): Path {
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
 
     val apiVersion = download.version.get()
@@ -156,7 +157,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
 
     val versionRequestUrl = "$apiUrl/v2/project/$apiPlugin/version/$apiVersion"
     val versionJsonPath = download(
-      DownloadCtx(project, apiUrl, versionRequestUrl, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it }, requireValidJar = false)
+      DownloadCtx(progressLoggerFactory, apiUrl, versionRequestUrl, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it }, requireValidJar = false)
     )
     val versionInfo = mapper.readValue<ModrinthVersionResponse>(versionJsonPath.toFile())
     val primaryFile = versionInfo.files.find { it.primary } ?: error("Could not find primary file for $download in $versionInfo")
@@ -169,11 +170,11 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val targetFile = targetDir.resolve(version.fileName)
 
     return download(
-      DownloadCtx(project, apiUrl, primaryFile.url, targetDir, targetFile, version, setter = { plugin[apiVersion] = it })
+      DownloadCtx(progressLoggerFactory, apiUrl, primaryFile.url, targetDir, targetFile, version, setter = { plugin[apiVersion] = it })
     )
   }
 
-  private fun resolveGitHubPlugin(project: Project, download: GitHubApiDownload): Path {
+  private fun resolveGitHubPlugin(progressLoggerFactory: ProgressLoggerFactory, download: GitHubApiDownload): Path {
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
 
     val owner = download.owner.get()
@@ -192,7 +193,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val downloadUrl = "https://github.com/$owner/$repo/releases/download/$tag/$asset"
 
     val setter: (PluginVersion) -> Unit = { tagProvider[asset] = it }
-    val ctx = DownloadCtx(project, "github.com", downloadUrl, targetDir, targetFile, version, setter)
+    val ctx = DownloadCtx(progressLoggerFactory, "github.com", downloadUrl, targetDir, targetFile, version, setter)
     return download(ctx)
   }
 
@@ -262,7 +263,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
         val opName = "${ctx.baseUrl}:${ctx.version.fileName}"
         val start = Instant.now()
         LOGGER.lifecycle("Downloading {}...", displayName)
-        when (val res = Downloader(url, ctx.targetFile, displayName, opName).download(ctx.project, connection)) {
+        when (val res = Downloader(url, ctx.targetFile, displayName, opName).download(ctx.progressLoggerFactory, connection)) {
           is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading {}, took {}.", displayName, Duration.between(start, Instant.now()).prettyPrint())
           is Downloader.Result.Failure -> throw IllegalStateException("Failed to download $displayName.", res.throwable)
         }
@@ -311,7 +312,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   }
 
   private data class DownloadCtx(
-    val project: Project,
+    val progressLoggerFactory: ProgressLoggerFactory,
     val baseUrl: String,
     val downloadUrl: String,
     val targetDir: Path,

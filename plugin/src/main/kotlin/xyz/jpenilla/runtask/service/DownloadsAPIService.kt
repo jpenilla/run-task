@@ -20,6 +20,7 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.kotlin.dsl.registerIfAbsent
 import org.gradle.process.ExecOperations
@@ -46,10 +47,10 @@ public interface DownloadsAPIService {
    * @param build build to resolve
    */
   public fun resolveBuild(
-    project: Project,
     providers: ProviderFactory,
     javaLauncher: JavaLauncher,
     execOperations: ExecOperations,
+    progressLoggerFactory: ProgressLoggerFactory,
     version: String,
     build: Build
   ): List<Path>
