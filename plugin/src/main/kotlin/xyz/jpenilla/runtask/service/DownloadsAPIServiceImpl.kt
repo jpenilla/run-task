@@ -35,6 +35,7 @@ import xyz.jpenilla.runtask.paperapi.DownloadsAPI
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.Downloader
 import xyz.jpenilla.runtask.util.InvalidDurationException
+import xyz.jpenilla.runtask.util.deleteEmptyParents
 import xyz.jpenilla.runtask.util.maybeApplyPaperclip
 import xyz.jpenilla.runtask.util.parseDuration
 import xyz.jpenilla.runtask.util.path
@@ -102,14 +103,15 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
         val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
         version.knownJars.remove(oldestBuild)
 
-        val toDelete = removed.fileName?.let { listOf(it) }
-          ?: requireNotNull(removed.classpath).toList()
+        val jarsDir = jarsFor(versionName)
+        val toDelete = removed.fileName?.let { listOf(jarsDir.resolve(it)) }
+          ?: requireNotNull(removed.classpath).flatMap { jarsDir.walkMatching(it) }
         for (path in toDelete) {
-          val delete = jarsFor(versionName).resolve(path)
           try {
-            delete.deleteIfExists()
+            path.deleteIfExists()
+            path.deleteEmptyParents()
           } catch (ex: IOException) {
-            LOGGER.warn("Failed to delete jar at {}", delete.absolutePathString(), ex)
+            LOGGER.warn("Failed to delete jar at {}", path.absolutePathString(), ex)
           }
         }
         writeVersions()

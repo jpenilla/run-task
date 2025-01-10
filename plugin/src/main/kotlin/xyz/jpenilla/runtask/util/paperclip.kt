@@ -64,6 +64,7 @@ internal fun maybeApplyPaperclip(
     stream.forEach {
       if (it.isRegularFile() && it.normalize().absolute() !in classpathPaths) {
         Files.delete(it)
+        it.deleteEmptyParents()
       }
     }
   }

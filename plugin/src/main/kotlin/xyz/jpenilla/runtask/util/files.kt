@@ -48,3 +48,10 @@ internal fun Path.walkMatching(glob: String): List<Path> = walkMatching {
 internal fun Path.walkMatching(predicate: (Path) -> Boolean): List<Path> = Files.walk(this).use { stream ->
   stream.asSequence().filter { p -> predicate(p.relativeTo(this)) }.toList()
 }
+
+internal fun Path.deleteEmptyParents() {
+  if (Files.isDirectory(parent) && Files.list(parent).use { s -> s.toList().isEmpty() }) {
+    Files.deleteIfExists(parent)
+    parent.deleteEmptyParents()
+  }
+}
