@@ -1,4 +1,5 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   `kotlin-dsl`
@@ -28,17 +29,14 @@ kotlin {
   jvmToolchain {
     languageVersion.set(JavaLanguageVersion.of(8))
   }
+  compilerOptions {
+    apiVersion = KotlinVersion.KOTLIN_1_4
+    jvmTarget = JvmTarget.JVM_1_8
+    freeCompilerArgs = listOf("-opt-in=kotlin.io.path.ExperimentalPathApi")
+  }
 }
 
 tasks {
-  withType<KotlinCompile> {
-    kotlinOptions {
-      apiVersion = "1.4"
-      jvmTarget = "1.8"
-      freeCompilerArgs = listOf("-opt-in=kotlin.io.path.ExperimentalPathApi")
-    }
-  }
-
   register("format") {
     group = "formatting"
     description = "Formats source code according to project style."
