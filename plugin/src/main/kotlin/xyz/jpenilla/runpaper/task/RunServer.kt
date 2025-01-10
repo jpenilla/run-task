@@ -101,6 +101,16 @@ public abstract class RunServer : RunWithPlugins() {
   }
 
   /**
+   * Sets the Paper system property to ignore unsupported JVM runtimes.
+   * Can allow running older Paper builds on newer JVMs.
+   *
+   * This may have mixed results based on plugins, Paper version, and more.
+   */
+  public fun ignoreUnsupportedJvm() {
+    systemProperty("Paper.IgnoreJavaVersion", true)
+  }
+
+  /**
    * Sets the Minecraft version to use.
    *
    * Convenience method to set the [version] property.
