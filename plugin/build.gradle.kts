@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   `kotlin-dsl`
@@ -27,12 +26,11 @@ dependencies {
 kotlin {
   explicitApi()
   jvmToolchain {
-    languageVersion.set(JavaLanguageVersion.of(8))
+    languageVersion = JavaLanguageVersion.of(17)
   }
   compilerOptions {
-    apiVersion = KotlinVersion.KOTLIN_1_4
-    jvmTarget = JvmTarget.JVM_1_8
-    freeCompilerArgs = listOf("-opt-in=kotlin.io.path.ExperimentalPathApi")
+    jvmTarget = JvmTarget.JVM_17
+    freeCompilerArgs = listOf("-opt-in=kotlin.io.path.ExperimentalPathApi", "-Xjdk-release=17")
   }
 }
 
@@ -58,6 +56,7 @@ indra {
       }
     }
   }
+  javaVersions().target(17)
   signWithKeyFromProperties("signingKey", "signingPassword")
 }
 
@@ -106,4 +105,8 @@ indraPluginPublishing {
     "Gradle plugin adding a task to run a Waterfall proxy",
     tags("waterfall", "proxy")
   )
+}
+
+configurations.runtimeElements {
+  attributes.attribute(GradlePluginApiVersion.GRADLE_PLUGIN_API_VERSION_ATTRIBUTE, objects.named(GradleVersion.current().version))
 }
