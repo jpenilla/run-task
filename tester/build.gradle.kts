@@ -25,12 +25,13 @@ tasks {
   register<RunServer>("run1_8") {
     version = "1.8.8"
     runDirectory = layout.projectDirectory.dir("run1_8")
-    javaLauncher = toolchains.launcherFor { languageVersion = JavaLanguageVersion.of(8) }
+    javaLauncher = toolchains.launcherFor { languageVersion = JavaLanguageVersion.of(11) }
+    ignoreUnsupportedJvm()
   }
   register<RunServer>("run1_12") {
     version = "1.12.2"
     runDirectory = layout.projectDirectory.dir("run1_12")
-    javaLauncher = toolchains.launcherFor { languageVersion = JavaLanguageVersion.of(8) }
+    ignoreUnsupportedJvm()
   }
   withType<RunServer> {
     version.convention("1.21.4")
