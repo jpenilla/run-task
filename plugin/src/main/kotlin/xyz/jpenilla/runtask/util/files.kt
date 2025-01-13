@@ -20,7 +20,11 @@ import org.gradle.api.Project
 import org.gradle.api.file.FileSystemLocation
 import org.gradle.api.file.FileSystemLocationProperty
 import org.gradle.api.provider.Provider
+import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.relativeTo
+import kotlin.streams.asSequence
+import kotlin.use
 
 internal val FileSystemLocationProperty<*>.path: Path
   get() = get().path
@@ -36,3 +40,18 @@ internal val FileSystemLocation.path: Path
 
 internal val Project.sharedCaches: Path
   get() = gradle.gradleUserHomeDir.toPath().resolve(Constants.GRADLE_CACHES_DIRECTORY_NAME)
+
+internal fun Path.walkMatching(glob: String): List<Path> = walkMatching {
+  it.fileSystem.getPathMatcher("glob:$glob").matches(it)
+}
+
+internal fun Path.walkMatching(predicate: (Path) -> Boolean): List<Path> = Files.walk(this).use { stream ->
+  stream.asSequence().filter { p -> predicate(p.relativeTo(this)) }.toList()
+}
+
+internal fun Path.deleteEmptyParents() {
+  if (Files.isDirectory(parent) && Files.list(parent).use { s -> s.toList().isEmpty() }) {
+    Files.deleteIfExists(parent)
+    parent.deleteEmptyParents()
+  }
+}
