@@ -14,7 +14,7 @@ java.toolchain {
 runPaper.folia.registerTask()
 
 val paperPlugins = runPaper.downloadPluginsSpec {
-  modrinth("carbon", "WPejrRaD")
+  modrinth("carbon", "DQoDwRaq")
   github("jpenilla", "MiniMOTD", "v2.1.5", "minimotd-bukkit-2.1.5.jar")
   hangar("squaremap", "1.3.4")
   url("https://download.luckperms.net/1569/bukkit/loader/LuckPerms-Bukkit-5.4.152.jar")
@@ -48,7 +48,7 @@ tasks {
     runDirectory = layout.projectDirectory.dir("runVelocity")
     downloadPlugins {
       modrinth("minimotd", "nFRYRCht")
-      hangar("Carbon", "3.0.0-beta.27")
+      hangar("Carbon", "3.0.0-beta.28")
       url("https://download.luckperms.net/1569/velocity/LuckPerms-Velocity-5.4.152.jar")
     }
   }
