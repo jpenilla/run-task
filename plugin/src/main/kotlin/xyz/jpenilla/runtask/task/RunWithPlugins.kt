@@ -87,7 +87,7 @@ public abstract class RunWithPlugins : AbstractRun() {
 
     val service = pluginDownloadService.get()
     for (download in downloadPlugins.downloads) {
-      ourPluginJars.from(service.resolvePlugin(project, download))
+      ourPluginJars.from(service.resolvePlugin(progressLoggerFactory, download))
     }
   }
 

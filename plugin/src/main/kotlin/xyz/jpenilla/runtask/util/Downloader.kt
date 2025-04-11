@@ -16,9 +16,9 @@
  */
 package xyz.jpenilla.runtask.util
 
-import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import java.io.IOException
 import java.net.URL
 import java.net.URLConnection
@@ -53,18 +53,18 @@ internal class Downloader(
   @Volatile
   private var expectedSize = 0L
 
-  fun download(project: Project): Result {
+  fun download(progressLoggerFactory: ProgressLoggerFactory): Result {
     if (started) {
       error("Cannot start download a second time.")
     }
     started = true
 
     val connection = remote.openConnection()
-    return download(project, connection)
+    return download(progressLoggerFactory, connection)
   }
 
-  fun download(project: Project, connection: URLConnection): Result {
-    val listener = createDownloadListener(project)
+  fun download(progressLoggerFactory: ProgressLoggerFactory, connection: URLConnection): Result {
+    val listener = createDownloadListener(progressLoggerFactory)
 
     val downloadFuture = CompletableFuture.runAsync {
       val expected = connection.contentLengthLong
@@ -108,11 +108,8 @@ internal class Downloader(
     return Result.Failure(failure)
   }
 
-  private fun createDownloadListener(project: Project): ProgressListener {
-    // ProgressLogger is internal Gradle API and can technically be changed,
-    // (although it hasn't since 3.x) so we access it using reflection, and
-    // fallback to using LOGGER if it fails
-    val progressLogger = ProgressLoggerUtil.createProgressLogger(project, operationName)
+  private fun createDownloadListener(progressLoggerFactory: ProgressLoggerFactory): ProgressListener {
+    val progressLogger = progressLoggerFactory.newOperation(operationName)
     return if (progressLogger != null) {
       LoggingDownloadListener(
         progressLogger,
