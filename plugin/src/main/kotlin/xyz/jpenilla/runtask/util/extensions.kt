@@ -23,6 +23,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.toolchain.JavaLauncher
@@ -30,6 +31,7 @@ import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import org.gradle.process.JavaExecSpec
 import java.util.Locale
 import kotlin.reflect.KClass
 
@@ -63,3 +65,8 @@ internal fun <T : Any, U : T> ExtensiblePolymorphicDomainObjectContainer<T>.regi
 
 internal fun String.capitalized(locale: Locale = Locale.ROOT): String =
   replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+
+internal fun JavaExec.spec(): JavaExecSpec {
+  val spec: JavaExecSpec = JavaExec::class.java.getDeclaredField("javaExecSpec").also { it.isAccessible = true }.get(this) as JavaExecSpec
+  return spec
+}

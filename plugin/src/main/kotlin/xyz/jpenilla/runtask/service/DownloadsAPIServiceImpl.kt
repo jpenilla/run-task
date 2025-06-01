@@ -21,23 +21,30 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.gradle.api.InvalidUserDataException
-import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
+import org.gradle.jvm.toolchain.JavaLauncher
+import org.gradle.process.ExecOperations
 import xyz.jpenilla.runtask.paperapi.DownloadsAPI
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.Downloader
 import xyz.jpenilla.runtask.util.InvalidDurationException
+import xyz.jpenilla.runtask.util.deleteEmptyParents
+import xyz.jpenilla.runtask.util.maybeApplyPaperclip
 import xyz.jpenilla.runtask.util.parseDuration
 import xyz.jpenilla.runtask.util.path
 import xyz.jpenilla.runtask.util.prettyPrint
 import xyz.jpenilla.runtask.util.sha256
+import xyz.jpenilla.runtask.util.walkMatching
 import java.io.IOException
 import java.net.URL
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Duration
@@ -96,11 +103,16 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
         val removed = jars.remove(oldestBuild) ?: error("Build does not exist?")
         version.knownJars.remove(oldestBuild)
 
-        val oldJar = jarsFor(versionName).resolve(removed.fileName)
-        try {
-          oldJar.deleteIfExists()
-        } catch (ex: IOException) {
-          LOGGER.warn("Failed to delete jar at {}", oldJar.absolutePathString(), ex)
+        val jarsDir = jarsFor(versionName)
+        val toDelete = removed.fileName?.let { listOf(jarsDir.resolve(it)) }
+          ?: requireNotNull(removed.classpath).flatMap { jarsDir.walkMatching(it) }
+        for (path in toDelete) {
+          try {
+            path.deleteIfExists()
+            path.deleteEmptyParents()
+          } catch (ex: IOException) {
+            LOGGER.warn("Failed to delete jar at {}", path.absolutePathString(), ex)
+          }
         }
         writeVersions()
       }
@@ -118,22 +130,33 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
 
   @Synchronized
   override fun resolveBuild(
-    project: Project,
+    providers: ProviderFactory,
+    javaLauncher: JavaLauncher,
+    execOperations: ExecOperations,
+    progressLoggerFactory: ProgressLoggerFactory,
     version: String,
     build: DownloadsAPIService.Build
-  ): Path {
+  ): List<Path> {
     versions = loadOrCreateVersions()
 
     val versionData = versions.versions.computeIfAbsent(version) { Version(it) }
-    val buildNumber = resolveBuildNumber(project, versionData, build)
+    val buildNumber = resolveBuildNumber(providers, versionData, build)
+    val jarsDir = jarsFor(version)
 
     val possible = versionData.knownJars[buildNumber]
     if (possible != null && !parameters.refreshDependencies.get()) {
       // We already have this jar!
       LOGGER.lifecycle("Located {} {} build {} in local cache.", displayName, version, buildNumber)
 
+      if (possible.classpath != null && possible.classpath.isNotEmpty()) {
+        return possible.classpath.flatMap { jarsDir.walkMatching(it) }
+      }
+
+      requireNotNull(possible.fileName)
+      requireNotNull(possible.sha256)
+
       // Verify hash is still correct
-      val localJar = jarsFor(version).resolve(possible.fileName)
+      val localJar = jarsDir.resolve(possible.fileName)
       val localBuildHash = localJar.sha256()
       if (localBuildHash == possible.sha256) {
         if (build is DownloadsAPIService.Build.Specific) {
@@ -141,7 +164,36 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
           writeVersions()
         }
         // Hash is good, return
-        return localJar
+        if (possible.classpath == null) {
+          val workDir = jarsDir.resolve(buildNumber.toString()).createDirectories()
+          val classpath = maybeApplyPaperclip(
+            javaLauncher,
+            execOperations,
+            localJar,
+            workDir,
+            jarsDir,
+          )
+
+          if (classpath != null) {
+            localJar.deleteIfExists()
+            versionData.knownJars[buildNumber] = possible.copy(
+              fileName = null,
+              sha256 = null,
+              classpath = classpath
+            )
+            writeVersions()
+            return classpath.flatMap { jarsDir.walkMatching(it) }
+          } else {
+            Files.walk(workDir).use { stream ->
+              stream.sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) }
+            }
+            versionData.knownJars[buildNumber] = possible.copy(classpath = emptyList())
+            writeVersions()
+            return listOf(localJar)
+          }
+        } else if (possible.classpath.isEmpty()) {
+          return listOf(localJar)
+        }
       }
       versionData.knownJars.remove(buildNumber)
       writeVersions()
@@ -166,7 +218,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     val start = System.currentTimeMillis()
     val opName = "${parameters.downloadsEndpoint}:${parameters.downloadProject}"
 
-    when (val downloadResult = Downloader(downloadURL, tempFile, displayName, opName).download(project)) {
+    when (val downloadResult = Downloader(downloadURL, tempFile, displayName, opName).download(progressLoggerFactory)) {
       is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading {}, took {}.", displayName, Duration.ofMillis(System.currentTimeMillis() - start).prettyPrint())
       is Downloader.Result.Failure -> throw IllegalStateException("Failed to download $displayName.", downloadResult.throwable)
     }
@@ -181,27 +233,40 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     }
     LOGGER.lifecycle("Verified SHA256 hash of downloaded jar.")
 
-    val jarsDir = jarsFor(version)
     jarsDir.createDirectories()
     val fileName = "$buildNumber.jar"
     val destination = jarsDir.resolve(fileName)
 
-    tempFile.moveTo(destination, StandardCopyOption.REPLACE_EXISTING)
+    val classpath = maybeApplyPaperclip(
+      javaLauncher,
+      execOperations,
+      tempFile,
+      jarsDir.resolve(buildNumber.toString()),
+      jarsDir,
+    )
 
-    versionData.knownJars[buildNumber] = JarInfo(
+    if (classpath != null) {
+      tempFile.deleteIfExists()
+    } else {
+      tempFile.moveTo(destination, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    versionData.knownJars[buildNumber] = BuildInfo(
       buildNumber,
-      fileName,
-      download.sha256,
+      if (classpath == null) fileName else null,
+      if (classpath == null) download.sha256 else null,
+      classpath,
       // If the build was specifically requested, (as opposed to resolved as latest) mark the jar for keeping
       build is DownloadsAPIService.Build.Specific
     )
     writeVersions()
 
-    return destination
+    return classpath?.flatMap { jarsDir.walkMatching(it) }
+      ?: listOf(destination)
   }
 
   private fun resolveBuildNumber(
-    project: Project,
+    providers: ProviderFactory,
     version: Version,
     build: DownloadsAPIService.Build
   ): Int {
@@ -215,7 +280,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     }
 
     if (!parameters.refreshDependencies.get()) {
-      val checkFrequency = updateCheckFrequency(project)
+      val checkFrequency = updateCheckFrequency(providers)
       val timeSinceLastCheck = System.currentTimeMillis() - version.lastUpdateCheck
       if (timeSinceLastCheck <= checkFrequency.toMillis()) {
         return resolveLatestLocalBuild(version)
@@ -238,7 +303,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
       writeVersions()
     }
   } catch (ex: Exception) {
-    LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
+    LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.", ex)
     resolveLatestLocalBuild(version)
   }
 
@@ -247,10 +312,10 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     LOGGER.lifecycle(" > Actual: {}", actual)
   }
 
-  private fun updateCheckFrequency(project: Project): Duration {
-    var prop = project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY)
+  private fun updateCheckFrequency(providers: ProviderFactory): Duration {
+    var prop = providers.gradleProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY).orNull
     if (prop == null) {
-      prop = project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY_LEGACY)
+      prop = providers.gradleProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY_LEGACY).orNull
       if (prop != null) {
         LOGGER.warn(
           "Use of legacy '{}' property detected. Please replace with '{}'.",
@@ -263,7 +328,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
       return Duration.ofHours(1) // default to 1 hour if unset
     }
     try {
-      return parseDuration(prop as String)
+      return parseDuration(prop)
     } catch (ex: InvalidDurationException) {
       throw InvalidUserDataException("Unable to parse value for property '${Constants.Properties.UPDATE_CHECK_FREQUENCY}'.\n${ex.message}", ex)
     }
@@ -288,10 +353,11 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   private fun unknownVersion(version: String): Nothing =
     error("Unknown $displayName Version: $version")
 
-  private data class JarInfo(
+  private data class BuildInfo(
     val buildNumber: Int,
-    val fileName: String,
-    val sha256: String,
+    val fileName: String?,
+    val sha256: String?,
+    val classpath: List<String>?,
     val keep: Boolean = false
   )
 
@@ -302,6 +368,6 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   private data class Version(
     val name: String,
     val lastUpdateCheck: Long = 0L,
-    val knownJars: MutableMap<Int, JarInfo> = HashMap(),
+    val knownJars: MutableMap<Int, BuildInfo> = HashMap(),
   )
 }
