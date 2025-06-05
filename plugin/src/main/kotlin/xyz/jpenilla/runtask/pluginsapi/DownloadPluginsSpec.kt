@@ -29,6 +29,8 @@ import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.newInstance
 import org.gradle.kotlin.dsl.register
+import xyz.jpenilla.runtask.pluginsapi.discord.DiscordApi
+import xyz.jpenilla.runtask.pluginsapi.discord.DiscordApiImpl
 import xyz.jpenilla.runtask.pluginsapi.github.GitHubApi
 import xyz.jpenilla.runtask.pluginsapi.github.GitHubApiImpl
 import xyz.jpenilla.runtask.pluginsapi.hangar.HangarApi
@@ -67,6 +69,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
     registry.registerFactory(ModrinthApi::class) { name -> objects.newInstance(ModrinthApiImpl::class, name) }
     registry.registerFactory(GitHubApi::class) { name -> objects.newInstance(GitHubApiImpl::class, name) }
     registry.registerFactory(UrlPluginProvider::class) { name -> objects.newInstance(UrlPluginProviderImpl::class, name) }
+    registry.registerFactory(DiscordApi::class) { name -> objects.newInstance(DiscordApiImpl::class, name) }
 
     register("hangar", HangarApi::class) {
       url.set(HangarApi.DEFAULT_URL)
@@ -76,6 +79,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
     }
     register("github", GitHubApi::class)
     register("url", UrlPluginProvider::class)
+    register("discord", DiscordApi::class)
   }
 
   /**
@@ -96,6 +100,7 @@ public abstract class DownloadPluginsSpec @Inject constructor(
         is ModrinthApi -> ModrinthApi::class
         is GitHubApi -> GitHubApi::class
         is UrlPluginProvider -> UrlPluginProvider::class
+        is DiscordApi -> DiscordApi::class
         else -> throw IllegalStateException("Unknown PluginApi type: ${api.javaClass.name}")
       }
       configure(name, type) {
@@ -161,6 +166,26 @@ public abstract class DownloadPluginsSpec @Inject constructor(
    */
   public fun github(owner: String, repo: String, tag: String, assetName: String) {
     github.configure { add(owner, repo, tag, assetName) }
+  }
+
+  // discord extensions
+
+  /**
+   * Access to the built-in [DiscordApi].
+   */
+  @get:Internal
+  public val discord: NamedDomainObjectProvider<DiscordApi>
+    get() = named("discord", DiscordApi::class)
+
+  /**
+   * Add a plugin download from a Discord message link.
+   *
+   * @param channelId the Discord channel ID where the message is located
+   * @param messageId the Discord message ID containing the plugin download link
+   * @param token the Discord bot token to use for fetching the message
+   */
+  public fun discord(channelId: String, messageId: String, token: String) {
+    discord.configure { add(channelId, messageId, token) }
   }
 
   // url extensions

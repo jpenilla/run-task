@@ -21,6 +21,7 @@ import org.gradle.api.tasks.Input
 import xyz.jpenilla.runtask.util.HashingAlgorithm
 import xyz.jpenilla.runtask.util.calculateHash
 import xyz.jpenilla.runtask.util.toHexString
+import kotlin.io.byteInputStream
 
 public sealed class PluginApiDownload
 
@@ -172,4 +173,42 @@ public abstract class UrlDownload : PluginApiDownload() {
   internal fun urlHash(): String {
     return toHexString(url.get().byteInputStream().calculateHash(HashingAlgorithm.SHA1))
   }
+}
+
+public abstract class DiscordApiDownload : PluginApiDownload() {
+  @get:Input
+  public abstract val channelId: Property<String>
+
+  @get:Input
+  public abstract val messageId: Property<String>
+
+  @get:Input
+  public abstract val token: Property<String>
+
+  override fun toString(): String {
+    return "DiscordApiDownload{channelId=${channelId.get()}, messageId=${messageId.get()}, token=${"*".repeat(token.get().length)}}"
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) {
+      return true
+    }
+    if (javaClass != other?.javaClass) {
+      return false
+    }
+
+    other as DiscordApiDownload
+
+    return channelId.get() == other.channelId.get() &&
+      messageId.get() == other.messageId.get() &&
+      token.get() == other.token.get()
+  }
+
+  override fun hashCode(): Int {
+    var result = channelId.get().hashCode()
+    result = 31 * result + messageId.get().hashCode()
+    result = 31 * result + token.get().hashCode()
+    return result
+  }
+
 }

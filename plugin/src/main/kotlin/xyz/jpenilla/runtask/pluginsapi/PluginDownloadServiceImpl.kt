@@ -19,6 +19,7 @@ package xyz.jpenilla.runtask.pluginsapi
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.gradle.api.Project
@@ -93,6 +94,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
       is ModrinthApiDownload -> resolveModrinthPlugin(project, download)
       is GitHubApiDownload -> resolveGitHubPlugin(project, download)
       is UrlDownload -> resolveUrl(project, download)
+      is DiscordApiDownload -> resolveDiscordPlugin(project, download)
     }
   }
 
@@ -196,6 +198,83 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     return download(ctx)
   }
 
+  private fun resolveDiscordPlugin(project: Project, download: DiscordApiDownload): Path {
+    val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
+    val targetDir = cacheDir.resolve(Constants.DISCORD_PLUGIN_DIR)
+
+    val discordAuthorization = "Bot ${download.token.get()}"
+    val messageUrl = URI.create("https://discord.com/api/v10/channels/${download.channelId.get()}/messages/${download.messageId.get()}").toURL()
+    val connection = messageUrl.openConnection() as HttpURLConnection
+
+    try {
+      connection.instanceFollowRedirects = true
+      connection.setRequestProperty("Accept", "application/json")
+      connection.setRequestProperty("User-Agent", Constants.USER_AGENT)
+      connection.setRequestProperty("Authorization", discordAuthorization)
+      connection.connect()
+      val status = connection.responseCode
+
+      if (status in 200..299) {
+        val responseBody = connection.inputStream.bufferedReader().readText()
+        val mapper = jacksonObjectMapper()
+        val response: DiscordMessage = mapper.readValue(responseBody)
+        val attachments = response.attachments
+
+        if (attachments.isEmpty()) {
+          throw IllegalStateException("No attachments found in Discord message ${download.messageId.get()} in channel ${download.channelId.get()}")
+        }
+
+        val firstAttachedJar = attachments.find { it.filename.endsWith(".jar") }
+
+        if(firstAttachedJar == null) {
+          throw IllegalStateException("No jar file found in Discord message ${download.messageId.get()} in channel ${download.channelId.get()}")
+        }
+
+        val downloadUrl = firstAttachedJar.url
+        val urlHash = toHexString(downloadUrl.byteInputStream().calculateHash(HashingAlgorithm.SHA1))
+        val version = manifest.urlProvider[urlHash] ?: PluginVersion(fileName = "$urlHash.jar", displayName = downloadUrl)
+        val targetFile = targetDir.resolve(version.fileName)
+
+        val setter: (PluginVersion) -> Unit = { manifest.urlProvider[urlHash] = it }
+        val ctx = DownloadCtx(project, "discord.com", downloadUrl, targetDir, targetFile, version, setter, authorization = discordAuthorization)
+        return download(ctx)
+
+      } else {
+        throw IllegalStateException("Failed to fetch Discord message ${download.messageId.get()} in channel ${download.channelId.get()}, status code: $status")
+      }
+
+    } finally {
+      connection.disconnect()
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private data class DiscordMessage(
+    val attachments: Array<DiscordAttachment>
+  ) {
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (javaClass != other?.javaClass) return false
+
+      other as DiscordMessage
+
+      if (!attachments.contentEquals(other.attachments)) return false
+
+      return true
+    }
+
+    override fun hashCode(): Int {
+      return attachments.contentHashCode()
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private data class DiscordAttachment(
+    val id: String,
+    val filename: String,
+    val url: String
+  )
+
   private fun download(ctx: DownloadCtx): Path {
     if (refreshDependencies) {
       return downloadFile(ctx)
@@ -228,6 +307,10 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
       connection.instanceFollowRedirects = true
       connection.setRequestProperty("Accept", "application/octet-stream")
       connection.setRequestProperty("User-Agent", Constants.USER_AGENT)
+
+      if (ctx.authorization != null) {
+        connection.setRequestProperty("Authorization", ctx.authorization)
+      }
 
       if (ctx.targetFile.isRegularFile()) {
         if (ctx.version.lastUpdateCheck > 0 && ctx.version.hash?.check(ctx.targetFile) != false) {
@@ -280,6 +363,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     }
   }
 
+
   private fun requireValidJarFile(ctx: DownloadCtx, displayName: String) {
     if (!ctx.requireValidJar) {
       return
@@ -319,6 +403,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val version: PluginVersion,
     val setter: (PluginVersion) -> Unit,
     val requireValidJar: Boolean = true,
+    val authorization: String? = null
   )
 }
 
