@@ -40,7 +40,7 @@ internal object Constants {
   const val GITHUB_PLUGIN_DIR = "github"
   const val URL_PLUGIN_DIR = "url"
 
-  const val USER_AGENT = "run-task"
+  const val USER_AGENT = "run-task-gradle-plugins/2.4.0-SNAPSHOT (https://github.com/jpenilla/run-task)"
 
   object Plugins {
     const val SHADOW_JAR_TASK_NAME = "shadowJar"

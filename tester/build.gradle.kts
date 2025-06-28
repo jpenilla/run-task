@@ -12,12 +12,12 @@ val paperPlugins = runPaper.downloadPluginsSpec {
   modrinth("carbon", "6dmNHzy8")
   github("jpenilla", "MiniMOTD", "v2.1.0", "minimotd-bukkit-2.1.0.jar")
   hangar("squaremap", "1.2.3")
-  url("https://download.luckperms.net/1530/bukkit/loader/LuckPerms-Bukkit-5.4.117.jar")
+  url("https://download.luckperms.net/1593/bukkit/loader/LuckPerms-Bukkit-5.5.8.jar")
 }
 
 tasks {
   withType<RunServer> {
-    minecraftVersion("1.20.4")
+    minecraftVersion("1.21.7")
     runDirectory.set(layout.projectDirectory.dir("runServer"))
     downloadPlugins.from(paperPlugins)
   }

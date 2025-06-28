@@ -20,11 +20,13 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import xyz.jpenilla.runtask.util.Constants
+import java.net.HttpURLConnection
 import java.net.URL
 
 internal class DownloadsAPI(private val endpoint: String) {
   companion object {
-    const val PAPER_ENDPOINT: String = "https://api.papermc.io/v2/"
+    const val PAPER_ENDPOINT: String = "https://fill.papermc.io/v3/"
     private val MAPPER: JsonMapper = JsonMapper.builder()
       .addModule(kotlinModule())
       .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
@@ -39,8 +41,18 @@ internal class DownloadsAPI(private val endpoint: String) {
    * @return response
    */
   private inline fun <reified R> makeQuery(query: String): R {
-    val response = URL(endpoint + query).readText(Charsets.UTF_8)
-    return MAPPER.readValue(response)
+    val url = URL(endpoint + query)
+    val connection = url.openConnection() as HttpURLConnection
+    try {
+      connection.setRequestProperty("User-Agent", Constants.USER_AGENT)
+      connection.setRequestProperty("Accept", "application/json")
+      connection.connect()
+      
+      val response = connection.inputStream.bufferedReader().use { it.readText() }
+      return MAPPER.readValue(response)
+    } finally {
+      connection.disconnect()
+    }
   }
 
   fun projects(): ProjectsResponse {
@@ -51,23 +63,27 @@ internal class DownloadsAPI(private val endpoint: String) {
     return makeQuery("projects/$projectName")
   }
 
-  fun versionGroup(projectName: String, versionGroup: String): VersionGroupResponse {
-    return makeQuery("projects/$projectName/version_group/$versionGroup")
-  }
-
-  fun versionGroupBuilds(projectName: String, versionGroup: String): VersionGroupBuildsResponse {
-    return makeQuery("projects/$projectName/version_group/$versionGroup/builds")
+  fun versions(projectName: String): List<VersionResponse> {
+    return makeQuery("projects/$projectName/versions")
   }
 
   fun version(projectName: String, version: String): VersionResponse {
     return makeQuery("projects/$projectName/versions/$version")
   }
 
+  fun builds(projectName: String, version: String): List<BuildResponse> {
+    return makeQuery("projects/$projectName/versions/$version/builds")
+  }
+
+  fun latestBuild(projectName: String, version: String): BuildResponse {
+    return makeQuery("projects/$projectName/versions/$version/builds/latest")
+  }
+
   fun build(projectName: String, version: String, build: Int): BuildResponse {
     return makeQuery("projects/$projectName/versions/$version/builds/$build")
   }
 
-  fun downloadURL(projectName: String, version: String, build: Int, download: Download): String {
-    return endpoint + "projects/$projectName/versions/$version/builds/$build/downloads/${download.name}"
+  fun downloadURL(download: Download): String {
+    return download.url
   }
 }
