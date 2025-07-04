@@ -47,7 +47,7 @@ internal class DownloadsAPI(private val endpoint: String) {
       connection.setRequestProperty("User-Agent", Constants.USER_AGENT)
       connection.setRequestProperty("Accept", "application/json")
       connection.connect()
-      
+
       val response = connection.inputStream.bufferedReader().use { it.readText() }
       return MAPPER.readValue(response)
     } finally {
