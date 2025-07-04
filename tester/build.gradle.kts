@@ -30,4 +30,8 @@ tasks {
       url("https://download.luckperms.net/1530/velocity/LuckPerms-Velocity-5.4.117.jar")
     }
   }
+  runWaterfall {
+    version("1.21")
+    runDirectory.set(layout.projectDirectory.dir("runWaterfall"))
+  }
 }
