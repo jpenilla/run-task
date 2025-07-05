@@ -7,3 +7,5 @@ build
 /.idea/
 
 tester/run**
+
+.kotlin/

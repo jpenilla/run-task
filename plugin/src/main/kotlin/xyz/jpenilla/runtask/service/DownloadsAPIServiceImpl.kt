@@ -135,7 +135,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
       // Verify hash is still correct
       val localJar = jarsFor(version).resolve(possible.fileName)
       val localBuildHash = localJar.sha256()
-      if (localBuildHash == possible.sha256) {
+      if (localBuildHash.equals(possible.sha256, ignoreCase = true)) {
         if (build is DownloadsAPIService.Build.Specific) {
           versionData.knownJars[buildNumber] = possible.copy(keep = true)
           writeVersions()
@@ -156,9 +156,8 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     }
     LOGGER.lifecycle("Downloading {} {} build {}...", displayName, version, buildNumber)
     val buildResponse = api.build(parameters.downloadProject.get(), version, buildNumber)
-    val download = buildResponse.downloads["application"] ?: error("Could not find download.")
-    val downloadLink = api.downloadURL(parameters.downloadProject.get(), version, buildNumber, download)
-    val downloadURL = URL(downloadLink)
+    val download = buildResponse.downloads["server:default"] ?: error("Could not find download.")
+    val downloadURL = URL(api.downloadURL(download))
 
     val tempFile = createTempDirectory("downloads-api-service-impl")
       .resolve("${parameters.downloadProject.get()}-$version-$buildNumber-${System.currentTimeMillis()}.jar.tmp")
@@ -173,10 +172,10 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
 
     // Verify SHA256 hash of downloaded jar
     val downloadedFileHash = tempFile.sha256()
-    if (downloadedFileHash != download.sha256) {
+    if (!downloadedFileHash.equals(download.checksums.sha256, ignoreCase = true)) {
       tempFile.deleteIfExists()
       LOGGER.lifecycle("Invalid SHA256 hash for downloaded file: '{}', deleting.", download.name)
-      logExpectedActual(download.sha256, downloadedFileHash)
+      logExpectedActual(download.checksums.sha256, downloadedFileHash)
       error("Failed to verify SHA256 hash of downloaded file.")
     }
     LOGGER.lifecycle("Verified SHA256 hash of downloaded jar.")
@@ -191,7 +190,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     versionData.knownJars[buildNumber] = JarInfo(
       buildNumber,
       fileName,
-      download.sha256,
+      download.checksums.sha256,
       // If the build was specifically requested, (as opposed to resolved as latest) mark the jar for keeping
       build is DownloadsAPIService.Build.Specific
     )
@@ -231,8 +230,8 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   }
 
   private fun resolveLatestRemoteBuild(version: Version): Int = try {
-    LOGGER.lifecycle("Fetching {} builds for version {}...", displayName, version.name)
-    api.version(parameters.downloadProject.get(), version.name).builds.last().apply {
+    LOGGER.lifecycle("Fetching latest {} build for version {}...", displayName, version.name)
+    api.latestBuild(parameters.downloadProject.get(), version.name).id.apply {
       LOGGER.lifecycle("Latest build for {} is {}.", version.name, this)
       versions.versions[version.name] = version.copy(lastUpdateCheck = System.currentTimeMillis())
       writeVersions()

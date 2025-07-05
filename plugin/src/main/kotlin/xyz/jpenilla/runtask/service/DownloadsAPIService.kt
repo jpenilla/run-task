@@ -30,7 +30,7 @@ import java.nio.file.Path
 
 /**
  * Service that downloads and caches jars. The included implementation is for the Paper
- * downloads API v2.
+ * Fill API v3.
  */
 public interface DownloadsAPIService {
   /**
@@ -154,7 +154,7 @@ public interface DownloadsAPIService {
     public var buildServiceName: String?
 
     /**
-     * Paper downloads API v2 endpoint.
+     * Paper Fill API v3 endpoint.
      */
     public var downloadsEndpoint: String?
 
@@ -170,7 +170,7 @@ public interface DownloadsAPIService {
   }
 
   /**
-   * Represents a build of a Paper downloads API v2 project.
+   * Represents a build of a Paper Fill API v3 project.
    */
   public sealed class Build {
     /**
