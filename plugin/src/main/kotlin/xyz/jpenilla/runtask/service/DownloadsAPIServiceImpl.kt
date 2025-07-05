@@ -135,7 +135,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
       // Verify hash is still correct
       val localJar = jarsFor(version).resolve(possible.fileName)
       val localBuildHash = localJar.sha256()
-      if (localBuildHash == possible.sha256) {
+      if (localBuildHash.equals(possible.sha256, ignoreCase = true)) {
         if (build is DownloadsAPIService.Build.Specific) {
           versionData.knownJars[buildNumber] = possible.copy(keep = true)
           writeVersions()
@@ -172,7 +172,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
 
     // Verify SHA256 hash of downloaded jar
     val downloadedFileHash = tempFile.sha256()
-    if (downloadedFileHash != download.checksums.sha256) {
+    if (!downloadedFileHash.equals(download.checksums.sha256, ignoreCase = true)) {
       tempFile.deleteIfExists()
       LOGGER.lifecycle("Invalid SHA256 hash for downloaded file: '{}', deleting.", download.name)
       logExpectedActual(download.checksums.sha256, downloadedFileHash)
