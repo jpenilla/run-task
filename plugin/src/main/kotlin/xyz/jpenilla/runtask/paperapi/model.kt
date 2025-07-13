@@ -20,73 +20,88 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 internal data class BuildResponse(
-  val projectId: String,
-  val projectName: String,
-  val version: String,
-  val build: Int,
+  val id: Int,
   val time: String,
-  val changes: List<Change>,
-  val downloads: Map<String, Download>,
   val channel: String,
-  val promoted: Boolean,
+  val commits: List<Commit>,
+  val downloads: Map<String, Download>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-internal data class Change(
-  val commit: String,
-  val summary: String,
+internal data class Commit(
+  val sha: String,
   val message: String,
+  val time: String,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 internal data class Download(
   val name: String,
+  val url: String,
+  val size: Int,
+  val checksums: Checksums,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+internal data class Checksums(
   val sha256: String,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 internal data class ProjectsResponse(
-  val projects: List<String>,
+  val projects: List<ProjectResponse>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 internal data class ProjectResponse(
-  val projectId: String,
-  val projectName: String,
-  val versionGroups: List<String>,
-  val versions: List<String>,
+  val project: Project,
+  val versions: Map<String, List<String>>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-internal data class VersionGroupBuild(
-  val build: Int,
-  val time: String,
-  val changes: List<Change>,
-  val version: String,
-  val downloads: Map<String, Download>,
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-internal data class VersionGroupBuildsResponse(
-  val projectId: String,
-  val projectName: String,
-  val versionGroup: String,
-  val versions: List<String>,
-  val builds: List<VersionGroupBuild>,
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-internal data class VersionGroupResponse(
-  val projectId: String,
-  val projectName: String,
-  val versionGroup: String,
-  val versions: List<String>,
+internal data class Project(
+  val id: String,
+  val name: String,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 internal data class VersionResponse(
-  val projectId: String,
-  val projectName: String,
-  val version: String,
+  val version: Version,
   val builds: List<Int>,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+internal data class Version(
+  val id: String,
+  val support: Support,
+  val java: Java,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+internal data class Support(
+  val status: String,
+  val end: String? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+internal data class Java(
+  val version: JavaVersion,
+  val flags: JavaFlags,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+internal data class JavaVersion(
+  val minimum: Int,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+internal data class JavaFlags(
+  val recommended: List<String>,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+internal data class ErrorResponse(
+  val error: String,
+  val message: String,
+  val ok: Boolean,
 )
