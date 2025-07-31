@@ -39,6 +39,7 @@ internal object Constants {
   const val MODRINTH_PLUGIN_DIR = "modrinth"
   const val GITHUB_PLUGIN_DIR = "github"
   const val URL_PLUGIN_DIR = "url"
+  const val DISCORD_PLUGIN_DIR = "discord"
 
   const val USER_AGENT = "run-task-gradle-plugin (https://github.com/jpenilla/run-task)"
 
