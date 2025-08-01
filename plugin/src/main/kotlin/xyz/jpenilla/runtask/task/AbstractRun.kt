@@ -27,6 +27,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Optional
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.util.path
 import java.io.File
@@ -88,6 +89,9 @@ public abstract class AbstractRun : JavaExec() {
   @get:Inject
   protected abstract val layout: ProjectLayout
 
+  @get:Inject
+  protected abstract val progressLoggerFactory: ProgressLoggerFactory
+
   init {
     init0()
   }
@@ -124,7 +128,7 @@ public abstract class AbstractRun : JavaExec() {
         error("'runClasspath' is empty and no version was specified for the '$name' task. Don't know what version to download.")
       }
       downloadsApiService.get().resolveBuild(
-        project,
+        progressLoggerFactory,
         version.get(),
         build.get()
       )

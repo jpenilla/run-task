@@ -20,19 +20,15 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.gradle.api.InvalidUserDataException
-import org.gradle.api.Project
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.provider.Property
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import xyz.jpenilla.runtask.paperapi.DownloadsAPI
-import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.Downloader
-import xyz.jpenilla.runtask.util.InvalidDurationException
-import xyz.jpenilla.runtask.util.parseDuration
 import xyz.jpenilla.runtask.util.path
 import xyz.jpenilla.runtask.util.prettyPrint
 import xyz.jpenilla.runtask.util.sha256
@@ -57,6 +53,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     val downloadProjectDisplayName: Property<String>
     val cacheDirectory: DirectoryProperty
     val refreshDependencies: Property<Boolean>
+    val updateCheckFrequency: Property<Duration>
     val offlineMode: Property<Boolean>
   }
 
@@ -118,14 +115,14 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
 
   @Synchronized
   override fun resolveBuild(
-    project: Project,
+    progressLoggerFactory: ProgressLoggerFactory,
     version: String,
     build: DownloadsAPIService.Build
   ): Path {
     versions = loadOrCreateVersions()
 
     val versionData = versions.versions.computeIfAbsent(version) { Version(it) }
-    val buildNumber = resolveBuildNumber(project, versionData, build)
+    val buildNumber = resolveBuildNumber(versionData, build)
 
     val possible = versionData.knownJars[buildNumber]
     if (possible != null && !parameters.refreshDependencies.get()) {
@@ -165,7 +162,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     val start = System.currentTimeMillis()
     val opName = "${parameters.downloadsEndpoint}:${parameters.downloadProject}"
 
-    when (val downloadResult = Downloader(downloadURL, tempFile, displayName, opName).download(project)) {
+    when (val downloadResult = Downloader(downloadURL, tempFile, displayName, opName).download(progressLoggerFactory)) {
       is Downloader.Result.Success -> LOGGER.lifecycle("Done downloading {}, took {}.", displayName, Duration.ofMillis(System.currentTimeMillis() - start).prettyPrint())
       is Downloader.Result.Failure -> throw IllegalStateException("Failed to download $displayName.", downloadResult.throwable)
     }
@@ -200,7 +197,6 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   }
 
   private fun resolveBuildNumber(
-    project: Project,
     version: Version,
     build: DownloadsAPIService.Build
   ): Int {
@@ -214,7 +210,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     }
 
     if (!parameters.refreshDependencies.get()) {
-      val checkFrequency = updateCheckFrequency(project)
+      val checkFrequency = parameters.updateCheckFrequency.get()
       val timeSinceLastCheck = System.currentTimeMillis() - version.lastUpdateCheck
       if (timeSinceLastCheck <= checkFrequency.toMillis()) {
         return resolveLatestLocalBuild(version)
@@ -244,28 +240,6 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   private fun logExpectedActual(expected: String, actual: String) {
     LOGGER.lifecycle(" > Expected: {}", expected)
     LOGGER.lifecycle(" > Actual: {}", actual)
-  }
-
-  private fun updateCheckFrequency(project: Project): Duration {
-    var prop = project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY)
-    if (prop == null) {
-      prop = project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY_LEGACY)
-      if (prop != null) {
-        LOGGER.warn(
-          "Use of legacy '{}' property detected. Please replace with '{}'.",
-          Constants.Properties.UPDATE_CHECK_FREQUENCY_LEGACY,
-          Constants.Properties.UPDATE_CHECK_FREQUENCY
-        )
-      }
-    }
-    if (prop == null) {
-      return Duration.ofHours(1) // default to 1 hour if unset
-    }
-    try {
-      return parseDuration(prop as String)
-    } catch (ex: InvalidDurationException) {
-      throw InvalidUserDataException("Unable to parse value for property '${Constants.Properties.UPDATE_CHECK_FREQUENCY}'.\n${ex.message}", ex)
-    }
   }
 
   override fun close() {

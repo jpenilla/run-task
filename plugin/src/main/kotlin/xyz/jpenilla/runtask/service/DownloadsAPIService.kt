@@ -17,16 +17,22 @@
 package xyz.jpenilla.runtask.service
 
 import org.gradle.api.Action
+import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
+import org.gradle.api.logging.Logging
 import org.gradle.api.provider.Provider
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.kotlin.dsl.registerIfAbsent
 import xyz.jpenilla.runtask.paperapi.DownloadsAPI
 import xyz.jpenilla.runtask.paperapi.Projects
 import xyz.jpenilla.runtask.util.Constants
+import xyz.jpenilla.runtask.util.InvalidDurationException
 import xyz.jpenilla.runtask.util.capitalized
+import xyz.jpenilla.runtask.util.parseDuration
 import xyz.jpenilla.runtask.util.set
 import xyz.jpenilla.runtask.util.sharedCaches
 import java.nio.file.Path
+import java.time.Duration
 
 /**
  * Service that downloads and caches jars. The included implementation is for the Paper
@@ -38,17 +44,19 @@ public interface DownloadsAPIService {
    *
    * This method should be thread safe.
    *
-   * @param project project to use for context
+   * @param progressLoggerFactory progress logger factory
    * @param version version string
    * @param build build to resolve
    */
   public fun resolveBuild(
-    project: Project,
+    progressLoggerFactory: ProgressLoggerFactory,
     version: String,
     build: Build
   ): Path
 
   public companion object {
+    private val LOGGER = Logging.getLogger(Companion::class.java)
+
     /**
      * Registers a [DownloadsAPIService] with the provided configuration. If
      * there is already a [DownloadsAPIService] registered with the configured
@@ -75,6 +83,7 @@ public interface DownloadsAPIService {
           downloadProjectDisplayName.set(builder.downloadProjectDisplayName ?: proj.defaultDisplayName())
           cacheDirectory.set(cacheDir)
           refreshDependencies.set(project.gradle.startParameter.isRefreshDependencies)
+          updateCheckFrequency.set(updateCheckFrequency(project))
           offlineMode.set(project.gradle.startParameter.isOffline)
         }
       }
@@ -82,6 +91,28 @@ public interface DownloadsAPIService {
 
     private fun String.defaultDisplayName(): String =
       split('-').joinToString(" ") { it.capitalized() }
+
+    private fun updateCheckFrequency(project: Project): Duration {
+      var prop = project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY)
+      if (prop == null) {
+        prop = project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY_LEGACY)
+        if (prop != null) {
+          LOGGER.warn(
+            "Use of legacy '{}' property detected. Please replace with '{}'.",
+            Constants.Properties.UPDATE_CHECK_FREQUENCY_LEGACY,
+            Constants.Properties.UPDATE_CHECK_FREQUENCY
+          )
+        }
+      }
+      if (prop == null) {
+        return Duration.ofHours(1) // default to 1 hour if unset
+      }
+      try {
+        return parseDuration(prop as String)
+      } catch (ex: InvalidDurationException) {
+        throw InvalidUserDataException("Unable to parse value for property '${Constants.Properties.UPDATE_CHECK_FREQUENCY}'.\n${ex.message}", ex)
+      }
+    }
 
     /**
      * Get the default [DownloadsAPIService] used to download Paper.

@@ -4,6 +4,7 @@ plugins {
   `kotlin-dsl`
   alias(libs.plugins.gradle.plugin.publish)
   alias(libs.plugins.indra)
+  alias(libs.plugins.spotless)
   alias(libs.plugins.indra.publishing.gradle.plugin)
   alias(libs.plugins.indra.licenser.spotless)
 }
