@@ -101,16 +101,6 @@ public abstract class RunServer : RunWithPlugins() {
   }
 
   /**
-   * Sets the Paper system property to ignore unsupported JVM runtimes.
-   * Can allow running older Paper builds on newer JVMs.
-   *
-   * This may have mixed results based on plugins, Paper version, and more.
-   */
-  public fun ignoreUnsupportedJvm() {
-    systemProperty("Paper.IgnoreJavaVersion", true)
-  }
-
-  /**
    * Sets the Minecraft version to use.
    *
    * Convenience method to set the [version] property.
@@ -144,5 +134,26 @@ public abstract class RunServer : RunWithPlugins() {
    */
   public fun legacyPluginLoading() {
     legacyPluginLoading.set(true)
+  }
+
+  /**
+   * Sets the Paper system property to ignore unsupported JVM runtimes.
+   * Can allow running older Paper builds on newer JVMs.
+   *
+   * This may have mixed results based on plugins, Paper version, and more.
+   */
+  public fun ignoreUnsupportedJvm() {
+    systemProperty("Paper.IgnoreJavaVersion", true)
+  }
+
+  /**
+   * Sets the Paper system property to disable plugin remapping. Only has an effect
+   * on Paper 1.20.5 and newer builds that include plugin remapping.
+   *
+   * This will break any plugins referencing server internals using Spigot mappings,
+   * but will result in faster first-start times and reduced disk usage.
+   */
+  public fun disablePluginRemapping() {
+    systemProperty("paper.disablePluginRemapping", true)
   }
 }
