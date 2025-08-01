@@ -5,7 +5,7 @@ on:
     tags-ignore: [ "**" ]
   pull_request:
   release:
-    types: [ released ]
+    types: [ published ]
 jobs:
   build:
     strategy:
