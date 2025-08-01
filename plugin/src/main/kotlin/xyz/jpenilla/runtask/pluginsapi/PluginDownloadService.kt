@@ -23,6 +23,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.kotlin.dsl.registerIfAbsent
 import xyz.jpenilla.runtask.paperapi.Projects
 import xyz.jpenilla.runtask.util.Constants
@@ -50,10 +51,10 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
   /**
    * Resolve a plugin.
    *
-   * @param project project to use for context
+   * @param progressLoggerFactory progress logger factory
    * @param download plugin download
    */
-  public fun resolvePlugin(project: Project, download: PluginApiDownload): Path
+  public fun resolvePlugin(progressLoggerFactory: ProgressLoggerFactory, download: PluginApiDownload): Path
 
   public companion object {
     public fun registerIfAbsent(namePrefix: String, project: Project, config: Action<in Parameters>): Provider<out PluginDownloadService> {
