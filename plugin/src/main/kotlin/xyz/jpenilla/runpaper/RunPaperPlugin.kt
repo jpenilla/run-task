@@ -134,22 +134,13 @@ public abstract class RunPaperPlugin : RunPlugin() {
       group = Constants.RUN_PAPER_TASK_GROUP
       description = "Run a Mojang mapped Paper server for plugin testing, by integrating with paperweight."
     }
-    val deprecatedRunTask = registerDevBundleRun(Constants.Tasks.RUN_MOJANG_MAPPED_SERVER) {
-      description = "Deprecated equivalent of ${Constants.Tasks.RUN_DEV_BUNDLE_SERVER}"
-      doFirst {
-        logger.error("The '${Constants.Tasks.RUN_MOJANG_MAPPED_SERVER}' task has been deprecated and replaced by '${Constants.Tasks.RUN_DEV_BUNDLE_SERVER}'.")
-        Thread.sleep(5000L)
-      }
-    }
 
     afterEvaluate {
-      val op = Action<RunServer> {
+      runTask.configure {
         if (runExtension.detectPluginJar.get()) {
           pluginJars(tasks.named<RemapJar>(Constants.Plugins.PAPERWEIGHT_REOBF_JAR_TASK_NAME).flatMap { it.inputJar })
         }
       }
-      runTask.configure(op)
-      deprecatedRunTask.configure(op)
     }
   }
 

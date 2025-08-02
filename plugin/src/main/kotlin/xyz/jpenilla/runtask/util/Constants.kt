@@ -67,8 +67,6 @@ internal object Constants {
     const val RUN_SERVER = "runServer"
     const val RUN_FOLIA = "runFolia"
 
-    @Deprecated("Replaced by runDevBundleServer for clarity", replaceWith = ReplaceWith("RUN_DEV_BUNDLE_SERVER"))
-    const val RUN_MOJANG_MAPPED_SERVER = "runMojangMappedServer"
     const val RUN_DEV_BUNDLE_SERVER = "runDevBundleServer"
     const val RUN_VELOCITY = "runVelocity"
     const val RUN_WATERFALL = "runWaterfall"
