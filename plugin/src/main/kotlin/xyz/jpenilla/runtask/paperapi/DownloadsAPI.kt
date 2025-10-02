@@ -16,6 +16,7 @@
  */
 package xyz.jpenilla.runtask.paperapi
 
+import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
@@ -43,13 +44,16 @@ internal class DownloadsAPI(private val endpoint: String) {
   private inline fun <reified R> makeQuery(query: String): R {
     val url = URL(endpoint + query)
     val connection = url.openConnection() as HttpURLConnection
+    var response: String? = null
     try {
       connection.setRequestProperty("User-Agent", Constants.USER_AGENT)
       connection.setRequestProperty("Accept", "application/json")
       connection.connect()
 
-      val response = connection.inputStream.bufferedReader().use { it.readText() }
+      response = connection.inputStream.bufferedReader().use { it.readText() }
       return MAPPER.readValue(response)
+    } catch (ex: JacksonException) {
+      throw IllegalStateException("Failed to parse response from $url\n${response ?: "null response"}", ex)
     } finally {
       connection.disconnect()
     }
