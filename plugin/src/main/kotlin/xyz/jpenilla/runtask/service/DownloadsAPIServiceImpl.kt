@@ -233,7 +233,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
       writeVersions()
     }
   } catch (ex: Exception) {
-    LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.")
+    LOGGER.lifecycle("Failed to check for latest release, attempting to use latest local build.", ex)
     resolveLatestLocalBuild(version)
   }
 
@@ -259,7 +259,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   }
 
   private fun unknownVersion(version: String): Nothing =
-    error("Unknown $displayName Version: $version")
+    error("Unknown $displayName Version (failed to fetch or find in local cache): $version")
 
   private data class JarInfo(
     val buildNumber: Int,
