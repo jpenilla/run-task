@@ -21,6 +21,11 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import xyz.jpenilla.runtask.paperapi.internal.BuildResponse
+import xyz.jpenilla.runtask.paperapi.internal.Download
+import xyz.jpenilla.runtask.paperapi.internal.ProjectResponse
+import xyz.jpenilla.runtask.paperapi.internal.ProjectsResponse
+import xyz.jpenilla.runtask.paperapi.internal.VersionResponse
 import xyz.jpenilla.runtask.util.Constants
 import java.net.HttpURLConnection
 import java.net.URL

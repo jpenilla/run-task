@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.jpenilla.runtask.paperapi
+package xyz.jpenilla.runtask.paperapi.internal
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
