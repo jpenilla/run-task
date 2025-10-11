@@ -16,11 +16,10 @@
  */
 package xyz.jpenilla.runtask.paperapi
 
-import com.fasterxml.jackson.core.JacksonException
-import com.fasterxml.jackson.databind.PropertyNamingStrategies
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.kotlinModule
-import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNamingStrategy
 import xyz.jpenilla.runtask.util.Constants
 import java.net.HttpURLConnection
 import java.net.URL
@@ -28,10 +27,12 @@ import java.net.URL
 internal class DownloadsAPI(private val endpoint: String) {
   companion object {
     const val PAPER_ENDPOINT: String = "https://fill.papermc.io/v3/"
-    private val MAPPER: JsonMapper = JsonMapper.builder()
-      .addModule(kotlinModule())
-      .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
-      .build()
+
+    @OptIn(ExperimentalSerializationApi::class)
+    private val json = Json {
+      ignoreUnknownKeys = true
+      namingStrategy = JsonNamingStrategy.SnakeCase
+    }
   }
 
   /**
@@ -51,8 +52,8 @@ internal class DownloadsAPI(private val endpoint: String) {
       connection.connect()
 
       response = connection.inputStream.bufferedReader().use { it.readText() }
-      return MAPPER.readValue(response)
-    } catch (ex: JacksonException) {
+      return json.decodeFromString(response)
+    } catch (ex: SerializationException) {
       throw IllegalStateException("Failed to parse response from $url\n${response ?: "null response"}", ex)
     } finally {
       connection.disconnect()

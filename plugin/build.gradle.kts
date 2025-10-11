@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
   `kotlin-dsl`
+  embeddedKotlin("plugin.serialization")
   alias(libs.plugins.gradle.plugin.publish)
   alias(libs.plugins.indra)
   alias(libs.plugins.spotless)
@@ -20,7 +21,7 @@ repositories {
 }
 
 dependencies {
-  implementation(libs.bundles.jackson)
+  implementation(libs.kotlinxSerializationJson)
   compileOnly(libs.paperweightUserdev)
 }
 

@@ -16,9 +16,9 @@
  */
 package xyz.jpenilla.runtask.paperapi
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import kotlinx.serialization.Serializable
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class BuildResponse(
   val id: Int,
   val time: String,
@@ -27,14 +27,14 @@ internal data class BuildResponse(
   val downloads: Map<String, Download>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class Commit(
   val sha: String,
   val message: String,
   val time: String,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class Download(
   val name: String,
   val url: String,
@@ -42,64 +42,64 @@ internal data class Download(
   val checksums: Checksums,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class Checksums(
   val sha256: String,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class ProjectsResponse(
   val projects: List<ProjectResponse>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class ProjectResponse(
   val project: Project,
   val versions: Map<String, List<String>>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class Project(
   val id: String,
   val name: String,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class VersionResponse(
   val version: Version,
   val builds: List<Int>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class Version(
   val id: String,
   val support: Support,
   val java: Java,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class Support(
   val status: String,
   val end: String? = null,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class Java(
   val version: JavaVersion,
   val flags: JavaFlags,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class JavaVersion(
   val minimum: Int,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class JavaFlags(
   val recommended: List<String>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 internal data class ErrorResponse(
   val error: String,
   val message: String,

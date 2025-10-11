@@ -19,12 +19,12 @@ val paperPlugins = runPaper.downloadPluginsSpec {
   modrinth("carbon", "2ptKcv94")
   github("jpenilla", "MiniMOTD", "v2.1.8", "minimotd-bukkit-2.1.8.jar")
   hangar("squaremap", "1.3.8")
-  url("https://download.luckperms.net/1595/bukkit/loader/LuckPerms-Bukkit-5.5.10.jar")
+  url("https://download.luckperms.net/1605/bukkit/loader/LuckPerms-Bukkit-5.5.16.jar")
 }
 
 tasks {
   withType<RunServer> {
-    minecraftVersion("1.21.8")
+    minecraftVersion("1.21.10")
     runDirectory.set(layout.projectDirectory.dir("runServer"))
     downloadPlugins.from(paperPlugins)
   }
@@ -34,7 +34,7 @@ tasks {
     downloadPlugins {
       modrinth("minimotd", "4ceIMQUi")
       hangar("Carbon", "3.0.0-beta.32")
-      url("https://download.luckperms.net/1595/velocity/LuckPerms-Velocity-5.5.10.jar")
+      url("https://download.luckperms.net/1605/velocity/LuckPerms-Velocity-5.5.16.jar")
     }
   }
   runWaterfall {
