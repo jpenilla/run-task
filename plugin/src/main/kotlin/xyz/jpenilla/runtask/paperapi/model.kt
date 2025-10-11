@@ -19,7 +19,7 @@ package xyz.jpenilla.runtask.paperapi
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class BuildResponse(
+internal data class BuildResponse(
   val id: Int,
   val time: String,
   val channel: String,
@@ -28,14 +28,14 @@ public data class BuildResponse(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class Commit(
+internal data class Commit(
   val sha: String,
   val message: String,
   val time: String,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class Download(
+internal data class Download(
   val name: String,
   val url: String,
   val size: Int,
@@ -43,64 +43,64 @@ public data class Download(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class Checksums(
+internal data class Checksums(
   val sha256: String,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class ProjectsResponse(
+internal data class ProjectsResponse(
   val projects: List<ProjectResponse>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class ProjectResponse(
+internal data class ProjectResponse(
   val project: Project,
   val versions: Map<String, List<String>>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class Project(
+internal data class Project(
   val id: String,
   val name: String,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class VersionResponse(
+internal data class VersionResponse(
   val version: Version,
   val builds: List<Int>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class Version(
+internal data class Version(
   val id: String,
   val support: Support,
   val java: Java,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class Support(
+internal data class Support(
   val status: String,
   val end: String? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class Java(
+internal data class Java(
   val version: JavaVersion,
   val flags: JavaFlags,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class JavaVersion(
+internal data class JavaVersion(
   val minimum: Int,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class JavaFlags(
+internal data class JavaFlags(
   val recommended: List<String>,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public data class ErrorResponse(
+internal data class ErrorResponse(
   val error: String,
   val message: String,
   val ok: Boolean,
