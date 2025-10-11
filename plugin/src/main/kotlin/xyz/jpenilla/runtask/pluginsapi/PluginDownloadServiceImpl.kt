@@ -16,11 +16,11 @@
  */
 package xyz.jpenilla.runtask.pluginsapi
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.kotlinModule
-import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
 import org.gradle.api.logging.Logging
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import xyz.jpenilla.runtask.util.Constants
@@ -40,12 +40,12 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Locale
 import java.util.jar.JarFile
-import kotlin.io.path.bufferedReader
-import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteExisting
+import kotlin.io.path.inputStream
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isRegularFile
+import kotlin.io.path.outputStream
 
 internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
 
@@ -58,10 +58,10 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   // be fairly rare.
   private val minimumCheckDuration = Duration.ofDays(7)
 
-  private val mapper: JsonMapper = JsonMapper.builder()
-    .enable(SerializationFeature.INDENT_OUTPUT)
-    .addModule(kotlinModule())
-    .build()
+  private val mapper: Json = Json {
+    prettyPrint = true
+    ignoreUnknownKeys = true
+  }
 
   private val manifestFile: Path = parameters.cacheDirectory.file("manifest.json").path
   private var manifest: PluginsManifest = loadOrCreateManifest()
@@ -70,7 +70,10 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     return if (!manifestFile.isRegularFile()) {
       PluginsManifest()
     } else {
-      manifestFile.bufferedReader().use { reader -> mapper.readValue(reader) }
+      @OptIn(ExperimentalSerializationApi::class)
+      manifestFile.inputStream().buffered().use {
+        mapper.decodeFromStream<PluginsManifest>(it)
+      }
     }
   }
 
@@ -79,8 +82,9 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     if (!dir.isDirectory()) {
       dir.createDirectories()
     }
-    manifestFile.bufferedWriter().use { writer ->
-      mapper.writeValue(writer, manifest)
+    @OptIn(ExperimentalSerializationApi::class)
+    manifestFile.outputStream().buffered().use {
+      mapper.encodeToStream(PluginsManifest.serializer(), manifest, it)
     }
   }
 
@@ -158,7 +162,11 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val versionJsonPath = download(
       DownloadCtx(progressLoggerFactory, apiUrl, versionRequestUrl, targetDir, jsonFile, jsonVersion, setter = { plugin[jsonVersionName] = it }, requireValidJar = false)
     )
-    val versionInfo = mapper.readValue<ModrinthVersionResponse>(versionJsonPath.toFile())
+
+    @OptIn(ExperimentalSerializationApi::class)
+    val versionInfo = versionJsonPath.inputStream().buffered().use {
+      mapper.decodeFromStream<ModrinthVersionResponse>(it)
+    }
     val primaryFile = versionInfo.files.find { it.primary } ?: error("Could not find primary file for $download in $versionInfo")
 
     val version = plugin[apiVersion] ?: PluginVersion(
@@ -323,6 +331,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
 }
 
 // type aliases used to just prevent this from being a horribly nested type to look at
+@Serializable
 private data class PluginsManifest(
   val hangarProviders: MutableMap<String, HangarProvider> = HashMap(),
   val modrinthProviders: MutableMap<String, ModrinthProvider> = HashMap(),
@@ -344,11 +353,11 @@ private typealias ModrinthProvider = MutableMap<String, PluginVersions>
 
 private fun ModrinthProvider(): ModrinthProvider = HashMap()
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 private data class ModrinthVersionResponse(
   val files: List<FileData>
 ) {
-  @JsonIgnoreProperties(ignoreUnknown = true)
+  @Serializable
   data class FileData(
     val url: String,
     val primary: Boolean,
@@ -371,6 +380,8 @@ private fun GitHubRepo(): GitHubRepo = HashMap()
 private typealias PluginVersions = MutableMap<String, PluginVersion>
 
 private fun PluginVersions(): PluginVersions = HashMap()
+
+@Serializable
 private data class PluginVersion(
   val lastUpdateCheck: Long = 0L,
   val etag: String? = null,
@@ -379,6 +390,7 @@ private data class PluginVersion(
   val displayName: String? = null
 )
 
+@Serializable
 private data class Hash(
   val hash: String,
   val type: String

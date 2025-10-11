@@ -16,10 +16,11 @@
  */
 package xyz.jpenilla.runtask.service
 
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.kotlinModule
-import com.fasterxml.jackson.module.kotlin.readValue
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
@@ -38,13 +39,13 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Duration
 import kotlin.io.path.absolutePathString
-import kotlin.io.path.bufferedReader
-import kotlin.io.path.bufferedWriter
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.deleteIfExists
+import kotlin.io.path.inputStream
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.moveTo
+import kotlin.io.path.outputStream
 
 internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServiceImpl.Parameters>, AutoCloseable, DownloadsAPIService {
   interface Parameters : BuildServiceParameters {
@@ -62,10 +63,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   }
 
   private val api: DownloadsAPI = DownloadsAPI(parameters.downloadsEndpoint.get())
-  private val mapper: JsonMapper = JsonMapper.builder()
-    .enable(SerializationFeature.INDENT_OUTPUT)
-    .addModule(kotlinModule())
-    .build()
+  private val mapper: Json = Json { prettyPrint = true }
   private val versionsFile: Path = parameters.cacheDirectory.file("versions.json").path
 
   private var versions: Versions = loadOrCreateVersions()
@@ -249,18 +247,25 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     return if (!versionsFile.isRegularFile()) {
       Versions()
     } else {
-      versionsFile.bufferedReader().use { reader -> mapper.readValue(reader) }
+      @OptIn(ExperimentalSerializationApi::class)
+      versionsFile.inputStream().buffered().use {
+        mapper.decodeFromStream<Versions>(it)
+      }
     }
   }
 
   private fun writeVersions() {
     versionsFile.parent.createDirectories()
-    versionsFile.bufferedWriter().use { writer -> mapper.writeValue(writer, versions) }
+    @OptIn(ExperimentalSerializationApi::class)
+    versionsFile.outputStream().buffered().use {
+      mapper.encodeToStream(Versions.serializer(), versions, it)
+    }
   }
 
   private fun unknownVersion(version: String): Nothing =
     error("Unknown $displayName Version (failed to fetch or find in local cache): $version")
 
+  @Serializable
   private data class JarInfo(
     val buildNumber: Int,
     val fileName: String,
@@ -268,10 +273,12 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     val keep: Boolean = false
   )
 
+  @Serializable
   private data class Versions(
     val versions: MutableMap<String, Version> = HashMap()
   )
 
+  @Serializable
   private data class Version(
     val name: String,
     val lastUpdateCheck: Long = 0L,

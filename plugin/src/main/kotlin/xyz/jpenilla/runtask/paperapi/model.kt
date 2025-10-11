@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.jpenilla.runtask.paperapi.internal
+package xyz.jpenilla.runtask.paperapi
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import kotlinx.serialization.Serializable
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class BuildResponse(
+@Serializable
+internal data class BuildResponse(
   val id: Int,
   val time: String,
   val channel: String,
@@ -27,80 +27,80 @@ public data class BuildResponse(
   val downloads: Map<String, Download>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class Commit(
+@Serializable
+internal data class Commit(
   val sha: String,
   val message: String,
   val time: String,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class Download(
+@Serializable
+internal data class Download(
   val name: String,
   val url: String,
   val size: Int,
   val checksums: Checksums,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class Checksums(
+@Serializable
+internal data class Checksums(
   val sha256: String,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class ProjectsResponse(
+@Serializable
+internal data class ProjectsResponse(
   val projects: List<ProjectResponse>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class ProjectResponse(
+@Serializable
+internal data class ProjectResponse(
   val project: Project,
   val versions: Map<String, List<String>>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class Project(
+@Serializable
+internal data class Project(
   val id: String,
   val name: String,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class VersionResponse(
+@Serializable
+internal data class VersionResponse(
   val version: Version,
   val builds: List<Int>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class Version(
+@Serializable
+internal data class Version(
   val id: String,
   val support: Support,
   val java: Java,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class Support(
+@Serializable
+internal data class Support(
   val status: String,
   val end: String? = null,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class Java(
+@Serializable
+internal data class Java(
   val version: JavaVersion,
   val flags: JavaFlags,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class JavaVersion(
+@Serializable
+internal data class JavaVersion(
   val minimum: Int,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class JavaFlags(
+@Serializable
+internal data class JavaFlags(
   val recommended: List<String>,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public data class ErrorResponse(
+@Serializable
+internal data class ErrorResponse(
   val error: String,
   val message: String,
   val ok: Boolean,

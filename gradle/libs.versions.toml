@@ -6,14 +6,13 @@ spotless = { id = "com.diffplug.spotless", version = "7.2.1" }
 gradle-plugin-publish = { id = "com.gradle.plugin-publish", version = "1.3.1" }
 
 [versions]
-jackson = "2.20.0"
 paperweight = "1.7.7"
 ktlint = "0.49.0"
 indra = "3.2.0"
+kotlinxSerialization = "1.7.3"
 
 [libraries]
-jacksonModuleKotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 paperweightUserdev = { module = "io.papermc.paperweight.userdev:io.papermc.paperweight.userdev.gradle.plugin", version.ref = "paperweight" }
 
 [bundles]
-jackson = ["jacksonModuleKotlin"]
