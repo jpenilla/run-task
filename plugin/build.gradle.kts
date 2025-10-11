@@ -34,7 +34,7 @@ kotlin {
   }
   compilerOptions {
     jvmTarget = JvmTarget.JVM_17
-    freeCompilerArgs = listOf("-opt-in=kotlin.io.path.ExperimentalPathApi", "-Xjdk-release=17")
+    freeCompilerArgs = listOf("-opt-in=kotlin.io.path.ExperimentalPathApi", "-Xjdk-release=17", "-Xlambdas=class")
   }
 }
 

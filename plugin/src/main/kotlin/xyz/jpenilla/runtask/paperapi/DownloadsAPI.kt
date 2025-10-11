@@ -50,6 +50,7 @@ internal class DownloadsAPI(private val endpoint: String) {
       connection.setRequestProperty("Accept", "application/json")
       connection.connect()
 
+      @OptIn(ExperimentalSerializationApi::class)
       return connection.inputStream.buffered().use { json.decodeFromStream(it) }
     } finally {
       connection.disconnect()
