@@ -23,6 +23,8 @@ repositories {
 dependencies {
   implementation(libs.kotlinxSerializationJson)
   compileOnly(libs.paperweightUserdev)
+  testImplementation(libs.junit)
+  testRuntimeOnly(libs.junitPlatformLauncher)
 }
 
 kotlin {

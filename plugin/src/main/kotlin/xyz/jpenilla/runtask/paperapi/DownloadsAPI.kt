@@ -17,9 +17,9 @@
 package xyz.jpenilla.runtask.paperapi
 
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
+import kotlinx.serialization.json.decodeFromStream
 import xyz.jpenilla.runtask.util.Constants
 import java.net.HttpURLConnection
 import java.net.URL
@@ -45,16 +45,12 @@ internal class DownloadsAPI(private val endpoint: String) {
   private inline fun <reified R> makeQuery(query: String): R {
     val url = URL(endpoint + query)
     val connection = url.openConnection() as HttpURLConnection
-    var response: String? = null
     try {
       connection.setRequestProperty("User-Agent", Constants.USER_AGENT)
       connection.setRequestProperty("Accept", "application/json")
       connection.connect()
 
-      response = connection.inputStream.bufferedReader().use { it.readText() }
-      return json.decodeFromString(response)
-    } catch (ex: SerializationException) {
-      throw IllegalStateException("Failed to parse response from $url\n${response ?: "null response"}", ex)
+      return connection.inputStream.buffered().use { json.decodeFromStream(it) }
     } finally {
       connection.disconnect()
     }
