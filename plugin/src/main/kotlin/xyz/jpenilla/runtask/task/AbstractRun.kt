@@ -101,6 +101,7 @@ public abstract class AbstractRun : JavaExec() {
     build.convention(DownloadsAPIService.Build.Latest)
     systemProperty("net.kyori.adventure.text.warnWhenLegacyFormattingDetected", true)
     systemProperty("xyz.jpenilla.run-task", true)
+    systemProperty("file.encoding", "UTF-8") // #60
     init()
   }
 
