@@ -20,6 +20,7 @@ import io.papermc.paperweight.tasks.RemapJar
 import io.papermc.paperweight.userdev.PaperweightUserExtension
 import io.papermc.paperweight.util.constants.DEV_BUNDLE_CONFIG
 import io.papermc.paperweight.util.constants.MOJANG_MAPPED_SERVER_RUNTIME_CONFIG
+import io.papermc.paperweight.util.constants.PAPERWEIGHT_EXTENSION
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -72,7 +73,7 @@ public abstract class RunPaperPlugin : RunPlugin() {
     }
     runServer.setupPluginJarDetection(target, runExtension)
 
-    target.plugins.withId(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID) {
+    if (target.extensions.findByName(PAPERWEIGHT_EXTENSION) != null) {
       target.setupPaperweightCompat(runServer, runExtension)
     }
 
@@ -98,7 +99,7 @@ public abstract class RunPaperPlugin : RunPlugin() {
   }
 
   override fun findPluginJar(task: TaskProvider<out RunWithPlugins>, project: Project): Provider<RegularFile>? {
-    if (project.plugins.hasPlugin(Constants.Plugins.PAPERWEIGHT_USERDEV_PLUGIN_ID)) {
+    if (project.extensions.findByName(PAPERWEIGHT_EXTENSION) != null) {
       val paperweight = project.extensions.getByType<PaperweightUserExtension>()
       try {
         project.configurations.getByName(DEV_BUNDLE_CONFIG).resolve()
