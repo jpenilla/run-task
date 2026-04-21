@@ -40,4 +40,11 @@ public interface ModrinthApi : PluginApi<ModrinthApi, ModrinthApiDownload> {
    * @param version plugin version id
    */
   public fun add(id: String, version: String)
+
+  /**
+   * Add a plugin download, downloading the latest available version.
+   *
+   * @param id plugin id on Modrinth
+   */
+  public fun add(id: String)
 }
