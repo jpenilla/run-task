@@ -18,6 +18,7 @@ package xyz.jpenilla.runtask.pluginsapi
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import xyz.jpenilla.runtask.util.HashingAlgorithm
 import xyz.jpenilla.runtask.util.calculateHash
 import xyz.jpenilla.runtask.util.toHexString
@@ -71,10 +72,11 @@ public abstract class ModrinthApiDownload : PluginApiDownload() {
   public abstract val id: Property<String>
 
   @get:Input
+  @get:Optional
   public abstract val version: Property<String>
 
   override fun toString(): String {
-    return "ModrinthApiDownload{url=${url.get()}, id=${id.get()}, version=${version.get()}}"
+    return "ModrinthApiDownload{url=${url.get()}, id=${id.get()}, version=${version.orNull ?: "latest"}}"
   }
 
   override fun equals(other: Any?): Boolean {
@@ -89,13 +91,13 @@ public abstract class ModrinthApiDownload : PluginApiDownload() {
 
     return url.get() == other.url.get() &&
       id.get() == other.id.get() &&
-      version.get() == other.version.get()
+      version.orNull == other.version.orNull
   }
 
   override fun hashCode(): Int {
     var result = url.get().hashCode()
     result = 31 * result + id.get().hashCode()
-    result = 31 * result + version.get().hashCode()
+    result = 31 * result + version.orNull.hashCode()
     return result
   }
 }

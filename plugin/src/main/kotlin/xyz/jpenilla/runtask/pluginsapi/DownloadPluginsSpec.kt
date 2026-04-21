@@ -142,6 +142,15 @@ public abstract class DownloadPluginsSpec @Inject constructor(
     modrinth.configure { add(id, version) }
   }
 
+  /**
+   * Add a plugin download, downloading the latest available version.
+   *
+   * @param id plugin id on Modrinth
+   */
+  public fun modrinth(id: String) {
+    modrinth.configure { add(id) }
+  }
+
   // github extensions
 
   /**
