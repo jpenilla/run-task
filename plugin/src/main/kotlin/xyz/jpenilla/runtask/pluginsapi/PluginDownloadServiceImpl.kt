@@ -145,17 +145,37 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   private fun resolveModrinthPlugin(progressLoggerFactory: ProgressLoggerFactory, download: ModrinthApiDownload): Path {
     val cacheDir = parameters.cacheDirectory.get().asFile.toPath()
 
-    val apiVersion = download.version.get()
     val apiPlugin = download.id.get()
     val apiUrl = download.url.get()
 
     val provider = manifest.modrinthProviders.computeIfAbsent(download.url.get()) { ModrinthProvider() }
     val plugin = provider.computeIfAbsent(download.id.get()) { PluginVersions() }
+
+    val targetDir = cacheDir.resolve(Constants.MODRINTH_PLUGIN_DIR).resolve(apiPlugin)
+
+    // Resolve the version: if not specified, fetch the latest from the versions list endpoint
+    val apiVersion: String
+    if (!download.version.isPresent) {
+      val latestJsonName = "latest-json"
+      val latestJsonVersion = plugin[latestJsonName] ?: PluginVersion(fileName = "$apiPlugin-latest-versions.json", displayName = "modrinth:$apiPlugin:latest:metadata")
+      val latestJsonFile = targetDir.resolve(latestJsonVersion.fileName)
+      val latestRequestUrl = "$apiUrl/v2/project/$apiPlugin/version"
+      val latestJsonPath = download(
+        DownloadCtx(progressLoggerFactory, apiUrl, latestRequestUrl, targetDir, latestJsonFile, latestJsonVersion, setter = { plugin[latestJsonName] = it }, requireValidJar = false)
+      )
+
+      @OptIn(ExperimentalSerializationApi::class)
+      val versionList = latestJsonPath.inputStream().buffered().use {
+        mapper.decodeFromStream<List<ModrinthVersionListEntry>>(it)
+      }
+      apiVersion = versionList.firstOrNull()?.id ?: error("Could not find any versions for modrinth project $apiPlugin")
+    } else {
+      apiVersion = download.version.get()
+    }
+
     val jsonVersionName = "$apiVersion-json"
     val jsonVersion = plugin[jsonVersionName] ?: PluginVersion(fileName = "$apiPlugin-$apiVersion-info.json", displayName = "modrinth:$apiPlugin:$apiVersion:metadata")
 
-    val targetDir =
-      cacheDir.resolve(Constants.MODRINTH_PLUGIN_DIR).resolve(apiPlugin)
     val jsonFile = targetDir.resolve(jsonVersion.fileName)
 
     val versionRequestUrl = "$apiUrl/v2/project/$apiPlugin/version/$apiVersion"
@@ -364,6 +384,11 @@ private data class ModrinthVersionResponse(
     val hashes: Map<String, String>
   )
 }
+
+@Serializable
+private data class ModrinthVersionListEntry(
+  val id: String
+)
 
 // github types:
 private typealias GitHubProvider = MutableMap<String, GitHubOwner>
