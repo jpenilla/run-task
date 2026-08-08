@@ -21,6 +21,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
+import org.gradle.work.DisableCachingByDefault
 import xyz.jpenilla.runpaper.minecraftVersionIsSameOrNewerThan
 import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
 import xyz.jpenilla.runtask.service.DownloadsAPIService
@@ -34,6 +35,7 @@ import java.nio.file.Path
  *
  * Note that configuring [version] is required for this task type.
  */
+@DisableCachingByDefault(because = "Run tasks start a long-running interactive process and should not usually be cached")
 public abstract class RunServer : RunWithPlugins() {
   /**
    * Run Paper makes use of Paper's `add-plugin` command line option in order to

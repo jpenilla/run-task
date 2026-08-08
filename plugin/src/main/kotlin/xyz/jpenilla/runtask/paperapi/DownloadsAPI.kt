@@ -57,35 +57,19 @@ internal class DownloadsAPI(private val endpoint: String) {
     }
   }
 
-  fun projects(): ProjectsResponse {
-    return makeQuery("projects")
-  }
+  fun projects(): ProjectsResponse = makeQuery("projects")
 
-  fun project(projectName: String): ProjectResponse {
-    return makeQuery("projects/$projectName")
-  }
+  fun project(projectName: String): ProjectResponse = makeQuery("projects/$projectName")
 
-  fun versions(projectName: String): List<VersionResponse> {
-    return makeQuery("projects/$projectName/versions")
-  }
+  fun versions(projectName: String): List<VersionResponse> = makeQuery("projects/$projectName/versions")
 
-  fun version(projectName: String, version: String): VersionResponse {
-    return makeQuery("projects/$projectName/versions/$version")
-  }
+  fun version(projectName: String, version: String): VersionResponse = makeQuery("projects/$projectName/versions/$version")
 
-  fun builds(projectName: String, version: String): List<BuildResponse> {
-    return makeQuery("projects/$projectName/versions/$version/builds")
-  }
+  fun builds(projectName: String, version: String): List<BuildResponse> = makeQuery("projects/$projectName/versions/$version/builds")
 
-  fun latestBuild(projectName: String, version: String): BuildResponse {
-    return makeQuery("projects/$projectName/versions/$version/builds/latest")
-  }
+  fun latestBuild(projectName: String, version: String): BuildResponse = makeQuery("projects/$projectName/versions/$version/builds/latest")
 
-  fun build(projectName: String, version: String, build: Int): BuildResponse {
-    return makeQuery("projects/$projectName/versions/$version/builds/$build")
-  }
+  fun build(projectName: String, version: String, build: Int): BuildResponse = makeQuery("projects/$projectName/versions/$version/builds/$build")
 
-  fun downloadURL(download: Download): String {
-    return download.url
-  }
+  fun downloadURL(download: Download): String = download.url
 }

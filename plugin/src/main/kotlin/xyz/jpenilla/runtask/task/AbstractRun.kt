@@ -28,6 +28,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Optional
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
+import org.gradle.work.DisableCachingByDefault
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.util.path
 import java.io.File
@@ -39,6 +40,7 @@ import kotlin.io.path.isDirectory
 /**
  * Base run task which can fetch a runtime jar using [DownloadsAPIService].
  */
+@DisableCachingByDefault(because = "Run tasks start a long-running interactive process and should not usually be cached")
 public abstract class AbstractRun : JavaExec() {
   /**
    * The build to resolve. By default, [DownloadsAPIService.Build.Latest] is

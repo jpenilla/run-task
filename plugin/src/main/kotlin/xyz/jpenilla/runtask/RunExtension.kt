@@ -50,9 +50,7 @@ public abstract class RunExtension @Inject constructor(private val objects: Obje
   /**
    * Create a plugin download spec, and configure it with the provided action.
    */
-  public fun downloadPluginsSpec(): DownloadPluginsSpec {
-    return objects.newInstance(DownloadPluginsSpec::class, objects.polymorphicDomainObjectContainer(PluginApi::class))
-  }
+  public fun downloadPluginsSpec(): DownloadPluginsSpec = objects.newInstance(DownloadPluginsSpec::class, objects.polymorphicDomainObjectContainer(PluginApi::class))
 
   /**
    * Create a plugin download spec, and configure it with the provided action.
@@ -66,6 +64,7 @@ public abstract class RunExtension @Inject constructor(private val objects: Obje
   }
 
   // For groovy
+
   /**
    * Create a plugin download spec, and configure it with the provided closure.
    *

@@ -89,8 +89,7 @@ public interface DownloadsAPIService {
       }
     }
 
-    private fun String.defaultDisplayName(): String =
-      split('-').joinToString(" ") { it.capitalized() }
+    private fun String.defaultDisplayName(): String = split('-').joinToString(" ") { it.capitalized() }
 
     private fun updateCheckFrequency(project: Project): Duration {
       var prop = project.findProperty(Constants.Properties.UPDATE_CHECK_FREQUENCY)

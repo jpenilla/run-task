@@ -28,6 +28,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Nested
 import org.gradle.kotlin.dsl.newInstance
 import org.gradle.kotlin.dsl.polymorphicDomainObjectContainer
+import org.gradle.work.DisableCachingByDefault
 import xyz.jpenilla.runtask.RunExtension
 import xyz.jpenilla.runtask.pluginsapi.DownloadPluginsSpec
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
@@ -42,6 +43,7 @@ import javax.inject.Inject
  * the plugins in [pluginJars], it's expected that subclasses
  * will implement this behavior in [preExec].
  */
+@DisableCachingByDefault(because = "Run tasks start a long-running interactive process and should not usually be cached")
 public abstract class RunWithPlugins : AbstractRun() {
 
   /**
@@ -119,6 +121,7 @@ public abstract class RunWithPlugins : AbstractRun() {
   }
 
   // For groovy
+
   /**
    * Configure [downloadPlugins] with the provided action.
    *

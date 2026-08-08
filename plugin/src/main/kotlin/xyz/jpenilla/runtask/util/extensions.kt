@@ -61,5 +61,4 @@ internal fun <T : Any, U : T> PolymorphicDomainObjectContainer<T>.configure(
 
 internal fun <T : Any, U : T> ExtensiblePolymorphicDomainObjectContainer<T>.registerFactory(type: KClass<U>, config: (String) -> U): Unit = registerFactory(type.java, config)
 
-internal fun String.capitalized(locale: Locale = Locale.ROOT): String =
-  replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+internal fun String.capitalized(locale: Locale = Locale.ROOT): String = replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }

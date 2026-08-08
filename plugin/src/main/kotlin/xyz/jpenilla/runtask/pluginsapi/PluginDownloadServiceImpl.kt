@@ -66,14 +66,12 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
   private val manifestFile: Path = parameters.cacheDirectory.file("manifest.json").path
   private var manifest: PluginsManifest = loadOrCreateManifest()
 
-  private fun loadOrCreateManifest(): PluginsManifest {
-    return if (!manifestFile.isRegularFile()) {
-      PluginsManifest()
-    } else {
-      @OptIn(ExperimentalSerializationApi::class)
-      manifestFile.inputStream().buffered().use {
-        mapper.decodeFromStream<PluginsManifest>(it)
-      }
+  private fun loadOrCreateManifest(): PluginsManifest = if (!manifestFile.isRegularFile()) {
+    PluginsManifest()
+  } else {
+    @OptIn(ExperimentalSerializationApi::class)
+    manifestFile.inputStream().buffered().use {
+      mapper.decodeFromStream<PluginsManifest>(it)
     }
   }
 

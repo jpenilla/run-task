@@ -73,11 +73,9 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
      *
      * @param project project
      */
-    public fun paper(project: Project): Provider<out PluginDownloadService> {
-      return registerIfAbsent(Projects.PAPER, project) {
-        platformType.set(PlatformType.PAPER)
-        cacheDirectory.fileValue(project.sharedCaches.resolve(Constants.PAPER_PLUGINS_PATH).toFile())
-      }
+    public fun paper(project: Project): Provider<out PluginDownloadService> = registerIfAbsent(Projects.PAPER, project) {
+      platformType.set(PlatformType.PAPER)
+      cacheDirectory.fileValue(project.sharedCaches.resolve(Constants.PAPER_PLUGINS_PATH).toFile())
     }
 
     /**
@@ -85,11 +83,9 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
      *
      * @param project project
      */
-    public fun velocity(project: Project): Provider<out PluginDownloadService> {
-      return registerIfAbsent(Projects.VELOCITY, project) {
-        platformType.set(PlatformType.VELOCITY)
-        cacheDirectory.fileValue(project.sharedCaches.resolve(Constants.VELOCITY_PLUGINS_PATH).toFile())
-      }
+    public fun velocity(project: Project): Provider<out PluginDownloadService> = registerIfAbsent(Projects.VELOCITY, project) {
+      platformType.set(PlatformType.VELOCITY)
+      cacheDirectory.fileValue(project.sharedCaches.resolve(Constants.VELOCITY_PLUGINS_PATH).toFile())
     }
 
     /**
@@ -97,11 +93,9 @@ public interface PluginDownloadService : BuildService<PluginDownloadService.Para
      *
      * @param project project
      */
-    public fun waterfall(project: Project): Provider<out PluginDownloadService> {
-      return registerIfAbsent(Projects.WATERFALL, project) {
-        platformType.set(PlatformType.WATERFALL)
-        cacheDirectory.fileValue(project.sharedCaches.resolve(Constants.WATERFALL_PLUGINS_PATH).toFile())
-      }
+    public fun waterfall(project: Project): Provider<out PluginDownloadService> = registerIfAbsent(Projects.WATERFALL, project) {
+      platformType.set(PlatformType.WATERFALL)
+      cacheDirectory.fileValue(project.sharedCaches.resolve(Constants.WATERFALL_PLUGINS_PATH).toFile())
     }
   }
 }

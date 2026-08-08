@@ -47,7 +47,10 @@ import kotlin.io.path.isRegularFile
 import kotlin.io.path.moveTo
 import kotlin.io.path.outputStream
 
-internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServiceImpl.Parameters>, AutoCloseable, DownloadsAPIService {
+internal abstract class DownloadsAPIServiceImpl :
+  BuildService<DownloadsAPIServiceImpl.Parameters>,
+  AutoCloseable,
+  DownloadsAPIService {
   interface Parameters : BuildServiceParameters {
     val downloadsEndpoint: Property<String>
     val downloadProject: Property<String>
@@ -102,8 +105,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     }
   }
 
-  private fun jarsFor(version: String): Path =
-    jars.resolve(version)
+  private fun jarsFor(version: String): Path = jars.resolve(version)
 
   private val displayName: String
     get() = parameters.downloadProjectDisplayName.get()
@@ -218,10 +220,8 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     return resolveLatestRemoteBuild(version)
   }
 
-  private fun resolveLatestLocalBuild(version: Version): Int {
-    return version.knownJars.keys.maxOrNull()
-      ?: unknownVersion(version.name)
-  }
+  private fun resolveLatestLocalBuild(version: Version): Int = version.knownJars.keys.maxOrNull()
+    ?: unknownVersion(version.name)
 
   private fun resolveLatestRemoteBuild(version: Version): Int = try {
     LOGGER.lifecycle("Fetching latest {} build for version {}...", displayName, version.name)
@@ -243,14 +243,12 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
   override fun close() {
   }
 
-  private fun loadOrCreateVersions(): Versions {
-    return if (!versionsFile.isRegularFile()) {
-      Versions()
-    } else {
-      @OptIn(ExperimentalSerializationApi::class)
-      versionsFile.inputStream().buffered().use {
-        mapper.decodeFromStream<Versions>(it)
-      }
+  private fun loadOrCreateVersions(): Versions = if (!versionsFile.isRegularFile()) {
+    Versions()
+  } else {
+    @OptIn(ExperimentalSerializationApi::class)
+    versionsFile.inputStream().buffered().use {
+      mapper.decodeFromStream<Versions>(it)
     }
   }
 
@@ -262,8 +260,7 @@ internal abstract class DownloadsAPIServiceImpl : BuildService<DownloadsAPIServi
     }
   }
 
-  private fun unknownVersion(version: String): Nothing =
-    error("Unknown $displayName Version (failed to fetch or find in local cache): $version")
+  private fun unknownVersion(version: String): Nothing = error("Unknown $displayName Version (failed to fetch or find in local cache): $version")
 
   @Serializable
   private data class JarInfo(

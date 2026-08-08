@@ -35,9 +35,7 @@ public abstract class HangarApiDownload : PluginApiDownload() {
   @get:Input
   public abstract val version: Property<String>
 
-  override fun toString(): String {
-    return "HangarApiDownload{url=${url.get()}, plugin=${plugin.get()}, version=${version.get()}}"
-  }
+  override fun toString(): String = "HangarApiDownload{url=${url.get()}, plugin=${plugin.get()}, version=${version.get()}}"
 
   override fun equals(other: Any?): Boolean {
     if (this === other) {
@@ -73,9 +71,7 @@ public abstract class ModrinthApiDownload : PluginApiDownload() {
   @get:Input
   public abstract val version: Property<String>
 
-  override fun toString(): String {
-    return "ModrinthApiDownload{url=${url.get()}, id=${id.get()}, version=${version.get()}}"
-  }
+  override fun toString(): String = "ModrinthApiDownload{url=${url.get()}, id=${id.get()}, version=${version.get()}}"
 
   override fun equals(other: Any?): Boolean {
     if (this === other) {
@@ -114,9 +110,7 @@ public abstract class GitHubApiDownload : PluginApiDownload() {
   @get:Input
   public abstract val assetName: Property<String>
 
-  override fun toString(): String {
-    return "GitHubApiDownload{owner=${owner.get()}, repo=${repo.get()}, tag=${tag.get()}, assetName=${assetName.get()}}"
-  }
+  override fun toString(): String = "GitHubApiDownload{owner=${owner.get()}, repo=${repo.get()}, tag=${tag.get()}, assetName=${assetName.get()}}"
 
   override fun equals(other: Any?): Boolean {
     if (this === other) {
@@ -148,9 +142,7 @@ public abstract class UrlDownload : PluginApiDownload() {
   @get:Input
   public abstract val url: Property<String>
 
-  override fun toString(): String {
-    return "UrlDownload{url=${url.get()}}"
-  }
+  override fun toString(): String = "UrlDownload{url=${url.get()}}"
 
   override fun equals(other: Any?): Boolean {
     if (this === other) {
@@ -165,11 +157,7 @@ public abstract class UrlDownload : PluginApiDownload() {
     return url.get() == other.url.get()
   }
 
-  override fun hashCode(): Int {
-    return url.hashCode()
-  }
+  override fun hashCode(): Int = url.hashCode()
 
-  internal fun urlHash(): String {
-    return toHexString(url.get().byteInputStream().calculateHash(HashingAlgorithm.SHA1))
-  }
+  internal fun urlHash(): String = toHexString(url.get().byteInputStream().calculateHash(HashingAlgorithm.SHA1))
 }

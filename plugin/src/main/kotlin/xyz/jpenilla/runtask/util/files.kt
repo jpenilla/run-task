@@ -25,8 +25,7 @@ import java.nio.file.Path
 internal val FileSystemLocationProperty<*>.path: Path
   get() = get().path
 
-internal fun FileSystemLocationProperty<*>.set(path: Path): Unit =
-  set(path.toFile())
+internal fun FileSystemLocationProperty<*>.set(path: Path): Unit = set(path.toFile())
 
 internal val Provider<out FileSystemLocation>.path: Path
   get() = get().path

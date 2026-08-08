@@ -23,6 +23,7 @@ import org.gradle.api.Namer
 import org.gradle.api.PolymorphicDomainObjectContainer
 import org.gradle.api.Rule
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Nested
 import org.gradle.kotlin.dsl.get
@@ -182,6 +183,9 @@ public abstract class DownloadPluginsSpec @Inject constructor(
   }
 
   // All zero-arg methods must be annotated or Gradle will think it's an input
+  @Internal
+  override fun getElements(): Provider<out Collection<PluginApi<*, *>>> = registry.elements
+
   @Internal
   override fun getAsMap(): SortedMap<String, PluginApi<*, *>> = registry.asMap
 

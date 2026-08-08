@@ -1,3 +1,4 @@
+import org.gradle.plugin.compatibility.compatibility
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -83,8 +84,7 @@ spotless {
   }
 }
 
-fun tags(vararg extra: String): List<String> =
-  listOf("minecraft", "papermc", "run", *extra)
+fun tags(vararg extra: String): List<String> = listOf("minecraft", "papermc", "run", *extra)
 
 indraPluginPublishing {
   website("https://github.com/jpenilla/run-task")
@@ -109,6 +109,18 @@ indraPluginPublishing {
     "Gradle plugin adding a task to run a Waterfall proxy",
     tags("waterfall", "proxy")
   )
+}
+
+gradlePlugin {
+  plugins {
+    configureEach {
+      compatibility {
+        features {
+          configurationCache = true
+        }
+      }
+    }
+  }
 }
 
 configurations.runtimeElements {

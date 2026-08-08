@@ -88,7 +88,9 @@ public abstract class RunPaperPlugin : RunPlugin() {
             pluginJars.from(runServer.map { it.pluginJars })
           }
         }
+
         RunPaperExtension.Folia.PluginsMode.INHERIT_NONE -> {}
+
         RunPaperExtension.Folia.PluginsMode.PLUGIN_JAR_DETECTION -> task.setupPluginJarDetection(this, runExtension, false)
       }
       task.configure {

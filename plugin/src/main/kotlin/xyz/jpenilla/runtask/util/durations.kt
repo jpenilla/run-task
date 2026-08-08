@@ -72,16 +72,13 @@ internal class InvalidDurationException private constructor(
       Example input strings: ["1d", "12h", "1m", "30s"]
     """.trimIndent()
 
-    fun noInput(input: String): InvalidDurationException =
-      InvalidDurationException("Cannot parse a Duration from a blank input string '$input'.\n$infoMessage")
+    fun noInput(input: String): InvalidDurationException = InvalidDurationException("Cannot parse a Duration from a blank input string '$input'.\n$infoMessage")
 
-    fun invalidInput(input: String, cause: Throwable? = null) =
-      InvalidDurationException("Cannot parse a Duration from input '$input'.\n$infoMessage", cause)
+    fun invalidInput(input: String, cause: Throwable? = null) = InvalidDurationException("Cannot parse a Duration from input '$input'.\n$infoMessage", cause)
   }
 }
 
-internal fun Duration.prettyPrint(): String =
-  toString()
-    .substring(2)
-    .replace("(\\d[HMS])(?!$)".toRegex(), "$1 ")
-    .lowercase(Locale.ENGLISH)
+internal fun Duration.prettyPrint(): String = toString()
+  .substring(2)
+  .replace("(\\d[HMS])(?!$)".toRegex(), "$1 ")
+  .lowercase(Locale.ENGLISH)

@@ -36,11 +36,9 @@ internal enum class HashingAlgorithm(private val algorithmName: String) {
   }
 }
 
-internal fun Path.sha256(): String =
-  toHexString(calculateHash(HashingAlgorithm.SHA256))
+internal fun Path.sha256(): String = toHexString(calculateHash(HashingAlgorithm.SHA256))
 
-internal fun Path.calculateHash(algorithm: HashingAlgorithm): ByteArray =
-  Files.newInputStream(this).calculateHash(algorithm)
+internal fun Path.calculateHash(algorithm: HashingAlgorithm): ByteArray = Files.newInputStream(this).calculateHash(algorithm)
 
 internal fun InputStream.calculateHash(algorithm: HashingAlgorithm): ByteArray = use { inputStream ->
   val stream = DigestInputStream(inputStream, algorithm.digest())

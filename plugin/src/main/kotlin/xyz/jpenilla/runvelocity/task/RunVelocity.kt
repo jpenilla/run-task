@@ -16,6 +16,7 @@
  */
 package xyz.jpenilla.runvelocity.task
 
+import org.gradle.work.DisableCachingByDefault
 import xyz.jpenilla.runtask.pluginsapi.PluginDownloadService
 import xyz.jpenilla.runtask.service.DownloadsAPIService
 import xyz.jpenilla.runtask.task.RunWithPlugins
@@ -25,6 +26,7 @@ import java.nio.file.Path
 /**
  * Task to download and run a Velocity server along with plugins.
  */
+@DisableCachingByDefault(because = "Run tasks start a long-running interactive process and should not usually be cached")
 public abstract class RunVelocity : RunWithPlugins() {
   override fun init() {
     super.init()
