@@ -6,7 +6,7 @@ spotless = { id = "com.diffplug.spotless", version = "8.9.0" }
 gradle-plugin-publish = { id = "com.gradle.plugin-publish", version = "2.1.1" }
 
 [versions]
-paperweight = "2.0.0-beta.21"
+paperweight = "2.0.0-SNAPSHOT"
 ktlint = "1.8.0"
 indra = "4.0.0"
 kotlinxSerialization = "1.11.0"
