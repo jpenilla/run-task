@@ -19,6 +19,8 @@ package xyz.jpenilla.runtask.pluginsapi.url
 import org.gradle.api.model.ObjectFactory
 import org.gradle.kotlin.dsl.newInstance
 import xyz.jpenilla.runtask.pluginsapi.UrlDownload
+import xyz.jpenilla.runtask.pluginsapi.url.spec.HttpSpecProvider
+import xyz.jpenilla.runtask.pluginsapi.url.spec.HttpSpecProviderImpl
 import javax.inject.Inject
 
 public abstract class UrlPluginProviderImpl @Inject constructor(private val name: String, private val objects: ObjectFactory) : UrlPluginProvider {
@@ -27,9 +29,14 @@ public abstract class UrlPluginProviderImpl @Inject constructor(private val name
 
   override fun getName(): String = name
 
-  override fun add(url: String) {
+  override fun add(url: String, block: HttpSpecProvider.() -> Unit) {
     val job = objects.newInstance(UrlDownload::class)
     job.url.set(url)
+
+    val spec = objects.newInstance(HttpSpecProviderImpl::class)
+    block.invoke(spec)
+    job.spec.set(spec)
+
     jobs += job
   }
 

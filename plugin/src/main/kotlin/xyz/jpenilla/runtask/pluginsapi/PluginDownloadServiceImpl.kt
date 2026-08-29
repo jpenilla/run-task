@@ -23,6 +23,7 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import org.gradle.api.logging.Logging
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
+import xyz.jpenilla.runtask.pluginsapi.url.spec.HttpSpecProvider
 import xyz.jpenilla.runtask.util.Constants
 import xyz.jpenilla.runtask.util.Downloader
 import xyz.jpenilla.runtask.util.HashingAlgorithm
@@ -110,7 +111,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val version = manifest.urlProvider[urlHash] ?: PluginVersion(fileName = "$urlHash.jar", displayName = download.url.get())
     val targetFile = targetDir.resolve(version.fileName)
     val setter: (PluginVersion) -> Unit = { manifest.urlProvider[urlHash] = it }
-    val ctx = DownloadCtx(progressLoggerFactory, "url", download.url.get(), targetDir, targetFile, version, setter)
+    val ctx = DownloadCtx(progressLoggerFactory, "url", download.url.get(), targetDir, targetFile, version, setter, downloadSpec = download.spec.get())
     return download(ctx)
   }
 
@@ -249,6 +250,12 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
         }
       }
 
+      ctx.downloadSpec?.apply {
+        for ((key, value) in headers) {
+          connection.setRequestProperty(key, value)
+        }
+      }
+
       connection.connect()
 
       val status = connection.responseCode
@@ -325,6 +332,7 @@ internal abstract class PluginDownloadServiceImpl : PluginDownloadService {
     val version: PluginVersion,
     val setter: (PluginVersion) -> Unit,
     val requireValidJar: Boolean = true,
+    val downloadSpec: HttpSpecProvider? = null
   )
 }
 

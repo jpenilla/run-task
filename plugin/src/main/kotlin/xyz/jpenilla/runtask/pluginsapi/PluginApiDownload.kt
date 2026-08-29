@@ -18,6 +18,7 @@ package xyz.jpenilla.runtask.pluginsapi
 
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import xyz.jpenilla.runtask.pluginsapi.url.spec.HttpSpecProvider
 import xyz.jpenilla.runtask.util.HashingAlgorithm
 import xyz.jpenilla.runtask.util.calculateHash
 import xyz.jpenilla.runtask.util.toHexString
@@ -141,6 +142,9 @@ public abstract class UrlDownload : PluginApiDownload() {
 
   @get:Input
   public abstract val url: Property<String>
+
+  @get:Input
+  public abstract val spec: Property<HttpSpecProvider>
 
   override fun toString(): String = "UrlDownload{url=${url.get()}}"
 
