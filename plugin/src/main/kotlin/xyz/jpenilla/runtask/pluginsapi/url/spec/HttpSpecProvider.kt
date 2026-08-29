@@ -6,5 +6,5 @@ public interface HttpSpecProvider {
   @get:Input
   public val headers: Map<String, String>
 
-  public fun header(pair: Pair<String, String>)
+  public fun header(key: String, value: String)
 }
