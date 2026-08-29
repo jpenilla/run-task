@@ -38,6 +38,7 @@ import xyz.jpenilla.runtask.pluginsapi.modrinth.ModrinthApi
 import xyz.jpenilla.runtask.pluginsapi.modrinth.ModrinthApiImpl
 import xyz.jpenilla.runtask.pluginsapi.url.UrlPluginProvider
 import xyz.jpenilla.runtask.pluginsapi.url.UrlPluginProviderImpl
+import xyz.jpenilla.runtask.pluginsapi.url.spec.HttpSpecProvider
 import xyz.jpenilla.runtask.util.configure
 import xyz.jpenilla.runtask.util.registerFactory
 import java.util.SortedMap
@@ -177,9 +178,10 @@ public abstract class DownloadPluginsSpec @Inject constructor(
    * Add a plugin download.
    *
    * @param urlString download URL
+   * @param block optional spec configuration. Allows to configure such things as headers.
    */
-  public fun url(urlString: String) {
-    url.configure { add(urlString) }
+  public fun url(urlString: String, block: HttpSpecProvider.() -> Unit = {}) {
+    url.configure { add(urlString, block) }
   }
 
   // All zero-arg methods must be annotated or Gradle will think it's an input

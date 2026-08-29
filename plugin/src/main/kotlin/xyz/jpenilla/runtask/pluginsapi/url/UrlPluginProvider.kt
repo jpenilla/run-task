@@ -18,6 +18,7 @@ package xyz.jpenilla.runtask.pluginsapi.url
 
 import xyz.jpenilla.runtask.pluginsapi.PluginApi
 import xyz.jpenilla.runtask.pluginsapi.UrlDownload
+import xyz.jpenilla.runtask.pluginsapi.url.spec.HttpSpecProvider
 
 /**
  * [PluginApi] implementation for downloading plugins from URLs.
@@ -28,5 +29,5 @@ public interface UrlPluginProvider : PluginApi<UrlPluginProvider, UrlDownload> {
    *
    * @param url download URL
    */
-  public fun add(url: String)
+  public fun add(url: String, block: HttpSpecProvider.() -> Unit)
 }
